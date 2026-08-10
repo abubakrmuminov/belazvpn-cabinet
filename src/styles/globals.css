@@ -1,0 +1,2250 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Flag emoji polyfill — Windows has no glyphs for regional-indicator flags, so
+   they fall back to country letters. This locally-bundled Twemoji flag font is
+   scoped via unicode-range to ONLY flag codepoints, so adding it to the front
+   of the font stacks fixes every flag everywhere without touching any markup
+   and without affecting any other text. Root fix, not a per-component wrap. */
+@font-face {
+  font-family: "Twemoji Country Flags";
+  unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E007F;
+  src: url("/fonts/TwemojiCountryFlags.woff2") format("woff2");
+  font-display: swap;
+}
+
+/* Animated gradient border — @property enables CSS-only angle animation */
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.hover-border-gradient {
+  --_bg: var(--border-inner-bg, rgb(var(--color-dark-900)));
+  --_accent: var(--accent-color, rgb(var(--color-accent-400)));
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--_bg), var(--_bg)) padding-box,
+    conic-gradient(
+      from var(--border-angle),
+      var(--_accent) 0%,
+      transparent 25%,
+      transparent 75%,
+      var(--_accent) 100%
+    )
+    border-box;
+  animation: border-rotate var(--border-duration, 3s) linear infinite;
+}
+
+.hover-border-gradient {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-border-gradient:hover,
+.hover-border-gradient:active {
+  box-shadow: 0 0 20px var(--accent-glow, rgba(var(--color-accent-400), 0.25));
+}
+
+.hover-border-gradient:disabled,
+.hover-border-gradient[disabled] {
+  box-shadow: none;
+  pointer-events: auto;
+}
+
+.light .hover-border-gradient {
+  --_bg: var(--border-inner-bg, rgb(var(--color-champagne-100)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-border-gradient {
+    animation-play-state: paused;
+  }
+}
+
+/* Global reduced-motion defence — collapses every animation and transition
+   to ~0ms so users with vestibular disorders, motion sensitivity, or just
+   the OS-level preference set get instant state changes. State-conveying
+   motion still arrives at its final frame; only the journey is skipped.
+   Specific rules above (animation-play-state: paused, animation: none)
+   stay as documentation of intent — this rule subsumes them via !important.
+   WCAG 2.3.3 (Animation from Interactions). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes border-rotate {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+/* Aceternity UI background CSS variables */
+:root {
+  --blue-500: #3b82f6;
+  --indigo-300: #a5b4fc;
+  --blue-300: #93c5fd;
+  --violet-200: #ddd6fe;
+  --blue-400: #60a5fa;
+  --black: #000000;
+  --white: #ffffff;
+}
+
+@layer base {
+  :root {
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+
+    /* Unified Card System - Zero rounded corners for industrial cabinets */
+    --bento-radius: 0px;
+    --bento-radius-lg: 0px;
+    --bento-gap: 16px;
+    --bento-gap-lg: 24px;
+    --bento-padding: 20px;
+    --bento-padding-lg: 24px;
+
+    /* Linear Design Tokens - sharp / mechanical */
+    --linear-radius: 0px;
+    --linear-radius-lg: 0px;
+    --linear-blur: 0px;
+    --linear-shadow-sm: 2px 2px 0 0 #000;
+    --linear-shadow: 3px 3px 0 0 #000;
+    --linear-shadow-lg: 4px 4px 0 0 #000;
+
+    /* Border radius scale - all 0px for SCADA console panels */
+    --radius-none: 0px;
+    --radius-small: 0px;
+    --radius-medium: 0px;
+    --radius-large: 0px;
+    --radius-pill: 9999px;
+
+    /* Spacing scale */
+    --spacing-compact: 12px;
+    --spacing-comfortable: 16px;
+    --spacing-spacious: 24px;
+
+    /* Theme colors - RGB format for opacity support */
+    /* Dark palette — BELAZ Industrial: Black/Graphite/Steel/Silver/SoftWhite */
+    --color-dark-50:  245, 245, 245;  /* Soft White  #F5F5F5 — primary text */
+    --color-dark-100: 245, 245, 245;  /* Soft White  #F5F5F5 */
+    --color-dark-200: 210, 212, 215;  /* Light Silver #D2D4D7 */
+    --color-dark-300: 164, 169, 173;  /* Metallic Silver #A4A9AD */
+    --color-dark-400: 128, 133, 138;  /* Medium Silver #80858A */
+    --color-dark-500: 92,  97, 102;   /* Dark Silver  #5C6166 */
+    --color-dark-600: 62,  67,  73;   /* Dark Steel   #3E4349 */
+    --color-dark-700: 50,  54,  59;   /* Deep Steel   #32363B */
+    --color-dark-800: 43,  43,  43;   /* Graphite     #2B2B2B */
+    --color-dark-850: 36,  36,  36;   /* Deep Graphite #242424 */
+    --color-dark-900: 31,  31,  31;   /* Black        #1F1F1F */
+    --color-dark-950: 20,  20,  20;   /* Deep Black   #141414 */
+
+    /* Champagne palette — light SCADA theme: grey-silver metallic console */
+    --color-champagne-50:  255, 255, 255;  /* Pure White */
+    --color-champagne-100: 245, 245, 245;  /* Soft White  #F5F5F5 */
+    --color-champagne-200: 235, 235, 235;  /* Light Grey  #EBEBEB */
+    --color-champagne-300: 210, 212, 215;  /* Light Silver #D2D4D7 */
+    --color-champagne-400: 164, 169, 173;  /* Metallic Silver #A4A9AD */
+    --color-champagne-500: 92,  97, 102;   /* Dark Silver  #5C6166 */
+    --color-champagne-600: 62,  67,  73;   /* Dark Steel   #3E4349 */
+    --color-champagne-700: 50,  54,  59;   /* Deep Steel   #32363B */
+    --color-champagne-800: 43,  43,  43;   /* Graphite     #2B2B2B */
+    --color-champagne-900: 31,  31,  31;   /* Black        #1F1F1F */
+    --color-champagne-950: 20,  20,  20;   /* Deep Black   #141414 */
+
+    /* Accent palette — Industrial Yellow #F4C542 */
+    --color-accent-50:  254, 252, 235;
+    --color-accent-100: 253, 247, 198;
+    --color-accent-200: 251, 237, 140;
+    --color-accent-300: 249, 225,  89;
+    --color-accent-400: 247, 213,  55;
+    --color-accent-500: 244, 197,  66;  /* Industrial Yellow #F4C542 */
+    --color-accent-600: 212, 166,  38;
+    --color-accent-700: 173, 133,  24;
+    --color-accent-800: 135, 102,  15;
+    --color-accent-900:  97,  72,   8;
+    --color-accent-950:  59,  43,   3;
+
+    /* Readable text on status fills — WCAG AA guaranteed */
+    --color-on-accent:  20, 20, 20;   /* Deep Black on Yellow — 8:1 contrast */
+    --color-on-success: 255, 255, 255;/* White on Green */
+    --color-on-warning: 20,  20, 20;  /* Deep Black on Warning Orange */
+    --color-on-error:   255, 255, 255;/* White on Red */
+
+    /* Success palette */
+    --color-success-50:  240, 253, 244;
+    --color-success-100: 220, 252, 231;
+    --color-success-200: 187, 247, 208;
+    --color-success-300: 134, 239, 172;
+    --color-success-400:  74, 222, 128;
+    --color-success-500:  76, 175,  80;
+    --color-success-600:  56, 142,  60;
+    --color-success-700:  46, 125,  50;
+    --color-success-800:  27,  94,  32;
+    --color-success-900:  20,  83,  45;
+    --color-success-950:   5,  46,  22;
+
+    /* Warning palette — Warning Orange #D97706 */
+    --color-warning-50:  255, 251, 235;
+    --color-warning-100: 254, 243, 199;
+    --color-warning-200: 253, 230, 138;
+    --color-warning-300: 252, 211,  77;
+    --color-warning-400: 251, 191,  36;
+    --color-warning-500: 217, 119,   6;  /* Warning Orange #D97706 */
+    --color-warning-600: 180,  83,   9;
+    --color-warning-700: 146,  64,  14;
+    --color-warning-800: 120,  53,  15;
+    --color-warning-900:  92,  40,   9;
+    --color-warning-950:  69,  26,   3;
+
+    /* Error palette */
+    --color-error-50:  254, 242, 242;
+    --color-error-100: 254, 226, 226;
+    --color-error-200: 254, 202, 202;
+    --color-error-300: 252, 165, 165;
+    --color-error-400: 248, 113, 113;
+    --color-error-500: 244,  67,  54;
+    --color-error-600: 229,  57,  53;
+    --color-error-700: 198,  40,  40;
+    --color-error-800: 183,  28,  28;
+    --color-error-900: 127,  29,  29;
+    --color-error-950:  69,  10,  10;
+
+    /* Subscription-status semantic tokens */
+    --color-urgent-400:   244, 197,  66;  /* Industrial Yellow */
+    --color-critical-500: 217, 119,   6;  /* Warning Orange */
+
+    /* Theme semantic colors (hex for direct use) */
+    --color-dark-bg:              #1F1F1F;
+    --color-dark-surface:         #2B2B2B;
+    --color-dark-text:            #F5F5F5;
+    --color-dark-text-secondary:  #A4A9AD;
+
+    --color-light-bg:             #F5F5F5;
+    --color-light-surface:        #FFFFFF;
+    --color-light-text:           #1F1F1F;
+    --color-light-text-secondary: #3E4349;
+  }
+
+  html {
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--color-dark-700)) transparent;
+  }
+
+  body {
+    /* 100vw включает ширину скроллбара, поэтому центрированный контент не
+       сдвигается, когда при навигации появляется/исчезает вертикальный
+       скроллбар; лишние ~6px справа уходят под скроллбар и срезаются
+       overflow-x: hidden на html. Вариант со scrollbar-gutter: stable не
+       подошёл: фоновый слой (fixed-портал) не красит зарезервированный жёлоб,
+       и справа остаётся пустая полоса. На мобильных overlay-скроллбары места
+       не занимают — правило ни на что не влияет. */
+    width: 100vw;
+  }
+
+  /* Hide scrollbar on mobile (iOS/Android) */
+  @media (max-width: 1023px) {
+    html,
+    body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-dark-700));
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--color-dark-600));
+  }
+
+  .light ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-champagne-400));
+  }
+
+  .light ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--color-champagne-500));
+  }
+
+  /* Smooth scroll only on desktop - mobile uses native */
+  @media (min-width: 1024px) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Dark theme (default) — Industrial Black console */
+  body,
+  .dark body {
+    @apply bg-dark-950 font-sans text-dark-50 antialiased;
+    overscroll-behavior-y: contain;
+    /* iOS smooth scrolling */
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+  }
+
+  /* Global Noise Texture — no mix-blend-mode to avoid fullscreen GPU compositing */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    background-repeat: repeat;
+    opacity: 0.03;
+  }
+
+  /* Disable noise on mobile to save GPU */
+  @media (max-width: 1023px) {
+    body::before {
+      display: none;
+    }
+  }
+
+  /* Main content — containment removed to avoid GPU layer conflicts
+     with isolation: isolate on content wrapper */
+  main {
+    contain: content;
+  }
+
+  /* Light theme — bright metallic SCADA console (Soft White / Silver) */
+  .light body {
+    @apply font-sans antialiased;
+    background-color: #F5F5F5;
+    color: #1F1F1F;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Light theme: swap dark palette → metallic SCADA palette.
+     Inverted: 950=lightest bg, 50=darkest text — exactly as needed for a
+     light-on-white panel. Accent/status text shades boosted to 700 for contrast. */
+  .light {
+    --color-dark-50:  20,  20,  20 !important;  /* Deep Black — primary text */
+    --color-dark-100: 31,  31,  31 !important;  /* Black */
+    --color-dark-200: 43,  43,  43 !important;  /* Graphite */
+    --color-dark-300: 62,  67,  73 !important;  /* Dark Steel */
+    --color-dark-400: 92,  97, 102 !important;  /* Dark Silver */
+    --color-dark-500: 128, 133, 138 !important; /* Medium Silver */
+    --color-dark-600: 164, 169, 173 !important; /* Metallic Silver */
+    --color-dark-700: 210, 212, 215 !important; /* Light Silver */
+    --color-dark-800: 235, 235, 235 !important; /* Light Grey */
+    --color-dark-850: 245, 245, 245 !important; /* Soft White */
+    --color-dark-900: 245, 245, 245 !important; /* Soft White */
+    --color-dark-950: 255, 255, 255 !important; /* Pure White — body bg */
+
+    /* Status text shades — boosted to 700 for minimum 4.5:1 on white */
+    --color-accent-300: var(--color-accent-700) !important;
+    --color-accent-400: var(--color-accent-700) !important;
+    --color-success-300: var(--color-success-700) !important;
+    --color-success-400: var(--color-success-700) !important;
+    --color-warning-300: var(--color-warning-700) !important;
+    --color-warning-400: var(--color-warning-700) !important;
+    --color-error-300: var(--color-error-700) !important;
+    --color-error-400: var(--color-error-700) !important;
+  }
+
+  /* Custom scrollbar - Dark */
+  .dark ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    @apply bg-dark-900;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-dark-700;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    @apply bg-dark-600;
+  }
+
+  /* Custom scrollbar - Light */
+  .light ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .light ::-webkit-scrollbar-track {
+    @apply bg-champagne-200;
+  }
+
+  .light ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-champagne-400;
+  }
+
+  .light ::-webkit-scrollbar-thumb:hover {
+    @apply bg-champagne-500;
+  }
+}
+
+/* Twemoji — cross-platform emoji rendering */
+img.twemoji {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
+}
+
+@layer components {
+  /* ========== BENTO DESIGN SYSTEM ========== */
+
+  /* ========== BENTO DESIGN SYSTEM — INDUSTRIAL PANELS ========== */
+
+  .bento-card {
+    /* Heavy equipment panel aesthetic: 2px solid border, hard drop shadow */
+    border: 2px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-900));
+    border-radius: var(--bento-radius); /* 0px — square panels */
+    padding: var(--bento-padding);
+    box-shadow: 3px 3px 0 0 #000, inset 0 1px 0 0 rgba(255,255,255,0.04);
+    animation: bentoFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--stagger, 0) * 50ms);
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media (min-width: 1024px) {
+    .bento-card {
+      background-color: rgb(var(--color-dark-900));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bento-card {
+      animation: none;
+    }
+  }
+
+  .bento-card-hover {
+    @apply bento-card cursor-pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.1s ease,
+      transform 0.1s ease;
+  }
+
+  .bento-card-hover:hover {
+    border-color: rgb(var(--color-accent-500));
+    background-color: rgb(var(--color-dark-800));
+    box-shadow: 4px 4px 0 0 #000, inset 0 1px 0 0 rgba(255,255,255,0.06);
+  }
+
+  /* no spotlight — removed glassmorphism */
+  .bento-card-hover::after {
+    display: none;
+  }
+
+  .bento-card-hover:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
+    transition-duration: 0.05s;
+  }
+
+  .bento-card-glow {
+    @apply bento-card cursor-pointer;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.1s ease;
+  }
+
+  .bento-card-glow:hover {
+    border-color: rgb(var(--color-accent-500));
+    box-shadow: 4px 4px 0 0 #000, 0 0 0 1px rgb(var(--color-accent-500) / 0.4);
+  }
+
+  .bento-card-glow:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
+    transition-duration: 0.05s;
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--bento-gap);
+  }
+
+  @media (min-width: 375px) {
+    .bento-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .bento-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--bento-gap-lg);
+    }
+  }
+
+  /* Light theme bento cards — bright metallic panel */
+  .light .bento-card {
+    border: 2px solid #A4A9AD;
+    background-color: #FFFFFF;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.2), inset 0 1px 0 0 rgba(255,255,255,0.9);
+  }
+
+  @media (min-width: 1024px) {
+    .light .bento-card {
+      background-color: #FFFFFF;
+    }
+  }
+
+  .light .bento-card-hover:hover {
+    border-color: rgb(var(--color-accent-600));
+    background-color: #F5F5F5;
+    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.25);
+  }
+
+  .light .bento-card-hover::after {
+    display: none;
+  }
+
+  .light .bento-card-glow:hover {
+    border-color: rgb(var(--color-accent-600));
+    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.2), 0 0 0 1px rgb(var(--color-accent-500) / 0.4);
+  }
+
+  /* ========== DARK THEME COMPONENTS (default) ========== */
+
+  /* Cards - Dark — Industrial panel plate */
+  .card {
+    border: 2px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-900));
+    padding: 20px;
+    border-radius: 0px;
+    box-shadow: 3px 3px 0 0 #000, inset 0 1px 0 0 rgba(255,255,255,0.04);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  @media (min-width: 640px) {
+    .card {
+      padding: 24px;
+    }
+  }
+
+  .card-hover {
+    @apply card cursor-pointer;
+  }
+
+  .card-hover:hover {
+    border-color: rgb(var(--color-accent-500));
+    background-color: rgb(var(--color-dark-800));
+  }
+
+  .card-hover:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
+  }
+
+  .card-glow {
+    @apply card cursor-pointer;
+  }
+
+  .card-glow:hover {
+    border-color: rgb(var(--color-accent-500));
+    box-shadow: 3px 3px 0 0 #000, 0 0 0 1px rgb(var(--color-accent-500) / 0.3);
+  }
+
+  .card-animated {
+    @apply card animate-slide-up;
+  }
+
+  /* Glass effect - Dark (no actual blur on industrial panels, just border) */
+  .glass {
+    border: 1px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-900));
+  }
+
+  /* Buttons - Dark — Mechanical heavy-press industrial buttons
+     Large touch targets, hard drop shadow, translate on press, zero radius. */
+  .btn {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wider;
+    border-radius: 0px;
+    transition: all 0.08s ease;
+    outline: none;
+    border: 2px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  @media (min-width: 640px) {
+    .btn {
+      min-height: 44px;
+    }
+  }
+
+  .btn-icon {
+    @apply min-h-[48px] min-w-[48px] p-2;
+    border-radius: 0px;
+    border: 2px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-dark-300));
+    box-shadow: 2px 2px 0 0 #000;
+    transition: all 0.08s ease;
+    outline: none;
+  }
+
+  .btn-icon:hover {
+    border-color: rgb(var(--color-accent-500));
+    color: rgb(var(--color-accent-500));
+  }
+
+  .btn-icon:active {
+    transform: translate(1px, 1px);
+    box-shadow: 0 0 0 0 #000;
+  }
+
+  @media (min-width: 640px) {
+    .btn-icon {
+      min-height: 40px;
+      min-width: 40px;
+    }
+  }
+
+  /* PRIMARY: Industrial Yellow with black text — max contrast */
+  .btn-primary {
+    @apply btn;
+    background-color: rgb(var(--color-accent-500)); /* #F4C542 */
+    color: rgb(var(--color-on-accent));             /* #141414 black */
+    border-color: #000;
+    box-shadow: 3px 3px 0 0 #000;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: rgb(var(--color-accent-400));
+    box-shadow: 4px 4px 0 0 #000;
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
+  }
+
+  /* SECONDARY: Steel panel button */
+  .btn-secondary {
+    @apply btn;
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-dark-100));
+    border-color: rgb(var(--color-dark-600));
+    box-shadow: 3px 3px 0 0 #000;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    border-color: rgb(var(--color-dark-400));
+    background-color: rgb(var(--color-dark-700));
+    color: rgb(var(--color-dark-50));
+  }
+
+  .btn-secondary:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
+  }
+
+  /* GHOST: Transparent functional button */
+  .btn-ghost {
+    @apply btn;
+    background-color: transparent;
+    color: rgb(var(--color-dark-300));
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-dark-50));
+    border-color: rgb(var(--color-dark-600));
+  }
+
+  .btn-ghost:active:not(:disabled) {
+    background-color: rgb(var(--color-dark-700));
+  }
+
+  /* DANGER: Red alert button */
+  .btn-danger {
+    @apply btn;
+    background-color: rgb(var(--color-error-500) / 0.12);
+    color: rgb(var(--color-error-400));
+    border-color: rgb(var(--color-error-500) / 0.4);
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.6);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background-color: rgb(var(--color-error-500) / 0.2);
+    border-color: rgb(var(--color-error-400));
+    color: rgb(var(--color-error-300));
+  }
+
+  .btn-danger:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 rgba(0,0,0,0.6);
+  }
+
+  /* Highlighted button for onboarding */
+  .btn-highlight {
+    @apply relative z-10 animate-spotlight;
+  }
+
+  /* Inputs - Dark — sunken recessed industrial terminal slots */
+  .input {
+    width: 100%;
+    border-radius: 0px;
+    border: 2px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-950));
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    color: rgb(var(--color-dark-50));
+    font-family: 'IBM Plex Mono', 'ui-monospace', monospace;
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5), inset -1px -1px 0px rgba(255,255,255,0.03);
+    transition: border-color 0.15s ease;
+    outline: none;
+    caret-color: rgb(var(--color-accent-500));
+  }
+
+  .input::placeholder {
+    color: rgb(var(--color-dark-500));
+  }
+
+  .input:focus {
+    border-color: rgb(var(--color-accent-500));
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5), 0 0 0 1px rgb(var(--color-accent-500) / 0.2);
+  }
+
+  .input-error {
+    @apply input;
+    border-color: rgb(var(--color-error-500) / 0.6);
+  }
+
+  .input-error:focus {
+    border-color: rgb(var(--color-error-500));
+  }
+
+  /* Remove tap highlight and focus outline on mobile */
+  button,
+  a,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+  }
+
+  /* Only show focus ring for keyboard navigation */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 2px solid rgb(var(--color-accent-500));
+    outline-offset: 2px;
+  }
+
+  .light button:focus-visible,
+  .light a:focus-visible,
+  .light [role="button"]:focus-visible {
+    outline: 2px solid rgb(var(--color-accent-600));
+    outline-offset: 2px;
+  }
+
+  /* Labels — monospace uppercase technical style */
+  .label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', 'ui-monospace', monospace;
+    color: rgb(var(--color-dark-400));
+  }
+
+  /* Badge - Dark — mechanical status tags */
+  .badge {
+    @apply inline-flex items-center rounded-none px-2.5 py-1 text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge border border-success-500/30 bg-success-500/15 text-success-400;
+  }
+
+  .badge-warning {
+    @apply badge border border-warning-500/30 bg-warning-500/15 text-warning-400;
+  }
+
+  .badge-error {
+    @apply badge border border-error-500/30 bg-error-500/15 text-error-400;
+  }
+
+  .badge-info {
+    @apply badge border border-accent-500/30 bg-accent-500/15 text-accent-400;
+  }
+
+  .badge-neutral {
+    @apply badge border border-dark-600/50 bg-dark-700/50 text-dark-300;
+  }
+
+  /* Stat card - Dark */
+  .stat-value {
+    @apply text-2xl font-bold text-dark-50 sm:text-3xl;
+  }
+
+  .stat-label {
+    @apply mt-1 text-sm text-dark-400;
+  }
+
+  /* Navigation - Dark — side drawer links */
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 0px;
+    color: rgb(var(--color-dark-300));
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-left: 3px solid transparent;
+    transition: all 0.1s ease;
+  }
+
+  .nav-item:hover {
+    border-left-color: rgb(var(--color-dark-500));
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-dark-50));
+  }
+
+  .nav-item-active {
+    border-left-color: rgb(var(--color-accent-500));
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-accent-500));
+  }
+
+  /* Bottom navigation — industrial chassis bar */
+  .bottom-nav {
+    position: fixed;
+    z-index: 50;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgb(var(--color-dark-900));
+    border-top: 2px solid rgb(var(--color-dark-600));
+    box-shadow: 0 -3px 0 0 #000;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transform: translateZ(0);
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    color: rgb(var(--color-dark-500));
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', 'ui-monospace', monospace;
+    transition: color 0.1s ease, background-color 0.1s ease;
+    position: relative;
+    border-radius: 0;
+  }
+
+  .bottom-nav-item:hover {
+    color: rgb(var(--color-dark-200));
+  }
+
+  .bottom-nav-item-active {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    color: rgb(var(--color-accent-500));
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', 'ui-monospace', monospace;
+    transition: color 0.1s ease;
+    position: relative;
+    border-radius: 0;
+  }
+
+  /* Divider - Dark — heavy rule */
+  .divider {
+    border-top: 2px solid rgb(var(--color-dark-700));
+  }
+
+  /* ========== MOBILE PERFORMANCE: Disable backdrop-blur ========== */
+  @media (max-width: 1023px) {
+    /* Disable all backdrop-blur on mobile for better scroll performance */
+    .backdrop-blur,
+    .backdrop-blur-sm,
+    .backdrop-blur-md,
+    .backdrop-blur-lg,
+    .backdrop-blur-xl,
+    .backdrop-blur-2xl,
+    .backdrop-blur-3xl,
+    .backdrop-blur-linear {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+  }
+
+  /* ========== LIGHT THEME COMPONENTS — Metallic SCADA Console ========== */
+
+  /* Cards - Light */
+  .light .card {
+    border: 2px solid #A4A9AD;
+    background-color: #FFFFFF;
+    padding: 20px;
+    border-radius: 0;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.2);
+  }
+
+  @media (min-width: 640px) {
+    .light .card {
+      padding: 24px;
+    }
+  }
+
+  .light .card-hover:hover {
+    border-color: rgb(var(--color-accent-600));
+    background-color: #F5F5F5;
+  }
+
+  .light .card-glow:hover {
+    border-color: rgb(var(--color-accent-600));
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.15);
+  }
+
+  /* Glass effect - Light — just solid bordered panel */
+  .light .glass {
+    border: 1px solid #A4A9AD;
+    background-color: #FFFFFF;
+  }
+
+  /* Buttons - Light — same mechanical design, adapted for bright background */
+  .light .btn-primary {
+    background-color: rgb(var(--color-accent-600));
+    color: rgb(var(--color-on-accent));
+    border-color: #000;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.7);
+  }
+
+  .light .btn-primary:hover:not(:disabled) {
+    background-color: rgb(var(--color-accent-700));
+  }
+
+  .light .btn-secondary {
+    background-color: #FFFFFF;
+    color: #1F1F1F;
+    border-color: #A4A9AD;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.2);
+  }
+
+  .light .btn-secondary:hover:not(:disabled) {
+    border-color: #3E4349;
+    background-color: #F5F5F5;
+  }
+
+  .light .btn-ghost {
+    background-color: transparent;
+    color: #3E4349;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .light .btn-ghost:hover:not(:disabled) {
+    background-color: #EBEBEB;
+    color: #1F1F1F;
+    border-color: #A4A9AD;
+  }
+
+  .light .btn-danger {
+    background-color: rgb(var(--color-error-50));
+    color: rgb(var(--color-error-700));
+    border-color: rgb(var(--color-error-300));
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.2);
+  }
+
+  .light .btn-icon {
+    border-color: #A4A9AD;
+    background-color: #FFFFFF;
+    color: #3E4349;
+    box-shadow: 2px 2px 0 0 rgba(0,0,0,0.2);
+  }
+
+  .light .btn-icon:hover {
+    border-color: rgb(var(--color-accent-600));
+    color: rgb(var(--color-accent-700));
+  }
+
+  /* Inputs - Light — clean recessed slot on white */
+  .light .input {
+    background-color: #FFFFFF;
+    border-color: #A4A9AD;
+    color: #1F1F1F;
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.15);
+  }
+
+  .light .input::placeholder {
+    color: #A4A9AD;
+  }
+
+  .light .input:focus {
+    border-color: rgb(var(--color-accent-600));
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1), 0 0 0 1px rgb(var(--color-accent-600) / 0.3);
+  }
+
+  .light .input-error {
+    border-color: rgb(var(--color-error-400));
+  }
+
+  /* Label - Light */
+  .light .label {
+    color: #3E4349;
+  }
+
+  /* Badge - Light */
+  .light .badge-success {
+    @apply border border-success-600 bg-success-50 text-success-700;
+  }
+
+  .light .badge-warning {
+    @apply border border-warning-600 bg-warning-50 text-warning-700;
+  }
+
+  .light .badge-error {
+    @apply border border-error-500 bg-error-50 text-error-700;
+  }
+
+  .light .badge-info {
+    border-color: rgb(var(--color-accent-600));
+    background-color: rgb(var(--color-accent-50));
+    color: rgb(var(--color-accent-800));
+  }
+
+  .light .badge-neutral {
+    border-color: #A4A9AD;
+    background-color: #F5F5F5;
+    color: #3E4349;
+  }
+
+  /* Stat card - Light */
+  .light .stat-value {
+    color: #1F1F1F;
+  }
+
+  .light .stat-label {
+    color: #3E4349;
+  }
+
+  /* Navigation - Light */
+  .light .nav-item {
+    color: #3E4349;
+  }
+
+  .light .nav-item:hover {
+    border-left-color: #A4A9AD;
+    background-color: #EBEBEB;
+    color: #1F1F1F;
+  }
+
+  .light .nav-item-active {
+    border-left-color: rgb(var(--color-accent-600));
+    background-color: #F5F5F5;
+    color: rgb(var(--color-accent-700));
+  }
+
+  /* Light bottom nav — bright industrial chassis bar */
+  .light .bottom-nav {
+    background-color: #FFFFFF;
+    border-top: 2px solid #A4A9AD;
+    box-shadow: 0 -2px 0 0 rgba(0,0,0,0.15);
+  }
+
+  .light .bottom-nav-item {
+    color: #80858A;
+  }
+
+  .light .bottom-nav-item:hover {
+    color: #3E4349;
+  }
+
+  .light .bottom-nav-item-active {
+    color: rgb(var(--color-accent-700));
+  }
+
+  /* Divider - Light */
+  .light .divider {
+    border-top: 2px solid #D2D4D7;
+  }
+
+  /* Safe area */
+  .safe-area-pb {
+    padding-bottom: calc(0.5rem + var(--safe-area-inset-bottom));
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Skeleton loader — industrial scan-line shimmer */
+  .skeleton {
+    border-radius: 0px;
+    background-color: rgb(var(--color-dark-800));
+    background-image: linear-gradient(
+      90deg,
+      rgb(var(--color-dark-800)) 0%,
+      rgb(var(--color-dark-700)) 40%,
+      rgb(var(--color-dark-800)) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-scan 1.5s linear infinite;
+  }
+
+  .light .skeleton {
+    background-color: #D2D4D7;
+    background-image: linear-gradient(
+      90deg,
+      #D2D4D7 0%,
+      #EBEBEB 40%,
+      #D2D4D7 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-scan 1.5s linear infinite;
+  }
+
+  /* Link */
+  .link {
+    @apply text-accent-400 transition-colors duration-200 hover:text-accent-300;
+  }
+
+  .light .link {
+    @apply text-accent-600 hover:text-accent-500;
+  }
+
+  /* Prose styles for formatted content */
+  .prose {
+    @apply leading-relaxed text-dark-200;
+  }
+
+  .prose-invert {
+    @apply text-dark-200;
+  }
+
+  .prose h1 {
+    @apply mb-4 mt-6 text-2xl font-bold text-dark-50 first:mt-0;
+  }
+
+  .prose h2 {
+    @apply mb-3 mt-6 text-xl font-semibold text-dark-50 first:mt-0;
+  }
+
+  .prose h3 {
+    @apply mb-2 mt-5 text-lg font-semibold text-dark-100 first:mt-0;
+  }
+
+  .prose h4 {
+    @apply mb-2 mt-4 text-base font-semibold text-dark-100 first:mt-0;
+  }
+
+  .prose p {
+    @apply mb-4 last:mb-0;
+  }
+
+  .prose ul {
+    @apply mb-4 list-disc space-y-2 pl-6;
+  }
+
+  .prose ol {
+    @apply mb-4 list-decimal space-y-2 pl-6;
+  }
+
+  .prose li {
+    @apply text-dark-300;
+  }
+
+  /* TipTap wraps list-item content in <p>. Without these resets, the marker
+     stays on its line and the <p> drops to the next line, breaking lists
+     in the editor and on the rendered article page (Telegram bug #597116). */
+  .prose li > p {
+    @apply mb-0 inline;
+  }
+
+  .prose li > p + p {
+    @apply mt-2 block;
+  }
+
+  .prose li::marker {
+    @apply text-accent-400;
+  }
+
+  .prose a {
+    @apply text-accent-400 underline underline-offset-2 transition-colors hover:text-accent-300;
+  }
+
+  .prose strong,
+  .prose b {
+    @apply font-semibold text-dark-100;
+  }
+
+  .prose em,
+  .prose i {
+    @apply italic text-dark-300;
+  }
+
+  .prose u {
+    @apply underline underline-offset-2;
+  }
+
+  .prose s,
+  .prose del {
+    @apply text-dark-400 line-through;
+  }
+
+  .prose tg-spoiler {
+    @apply cursor-pointer rounded bg-dark-600 px-1 text-transparent transition-colors hover:bg-transparent hover:text-dark-200;
+  }
+
+  .prose blockquote {
+    @apply my-4 rounded-r-lg border-l-4 border-accent-500/50 bg-dark-800/30 py-2 pl-4 italic text-dark-300;
+  }
+
+  .prose code {
+    @apply rounded bg-dark-800 px-1.5 py-0.5 font-mono text-sm text-accent-300;
+  }
+
+  .prose pre {
+    @apply mb-4 overflow-x-auto rounded-xl bg-dark-800 p-4;
+  }
+
+  .prose pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .prose hr {
+    @apply my-6 border-dark-700;
+  }
+
+  .prose table {
+    @apply mb-4 w-full border-collapse;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .prose th {
+    @apply border border-dark-700 bg-dark-800 p-3 text-left font-semibold text-dark-100;
+  }
+
+  .prose td {
+    @apply border border-dark-700 p-3 text-dark-300;
+  }
+
+  .prose img {
+    @apply my-4 h-auto max-w-full rounded-xl;
+  }
+
+  .prose mark {
+    @apply rounded bg-warning-500/30 px-1 text-dark-100;
+  }
+
+  .prose iframe {
+    @apply my-4 block aspect-video w-full max-w-2xl rounded-xl;
+  }
+
+  .prose video {
+    @apply my-4 block h-auto w-full max-w-full rounded-xl;
+  }
+
+  /* Light theme prose styles */
+  .light .prose {
+    @apply text-champagne-800;
+  }
+
+  .light .prose h1 {
+    @apply text-champagne-950;
+  }
+
+  .light .prose h2 {
+    @apply text-champagne-950;
+  }
+
+  .light .prose h3,
+  .light .prose h4 {
+    @apply text-champagne-900;
+  }
+
+  .light .prose li {
+    @apply text-champagne-700;
+  }
+
+  .light .prose li::marker {
+    @apply text-champagne-600;
+  }
+
+  .light .prose a {
+    @apply text-accent-600 hover:text-accent-500;
+  }
+
+  .light .prose strong,
+  .light .prose b {
+    @apply text-champagne-900;
+  }
+
+  .light .prose em,
+  .light .prose i {
+    @apply text-champagne-700;
+  }
+
+  .light .prose s,
+  .light .prose del {
+    @apply text-champagne-500;
+  }
+
+  .light .prose tg-spoiler {
+    @apply bg-champagne-300 text-transparent hover:bg-transparent hover:text-champagne-800;
+  }
+
+  .light .prose blockquote {
+    @apply border-champagne-400 bg-champagne-100/50 text-champagne-700;
+  }
+
+  .light .prose code {
+    @apply bg-champagne-200 text-champagne-800;
+  }
+
+  .light .prose pre {
+    @apply border border-champagne-300 bg-champagne-100;
+  }
+
+  .light .prose hr {
+    @apply border-champagne-300;
+  }
+
+  .light .prose th {
+    @apply border-champagne-300 bg-champagne-200 text-champagne-900;
+  }
+
+  .light .prose td {
+    @apply border-champagne-300 text-champagne-700;
+  }
+
+  .light .prose mark {
+    @apply bg-warning-400/30 text-champagne-900;
+  }
+
+  .light .prose iframe {
+    @apply border border-champagne-300;
+  }
+
+  .light .prose video {
+    @apply border border-champagne-300;
+  }
+
+  .light .prose img {
+    @apply border border-champagne-300;
+  }
+
+  /* Support for plain text with line breaks */
+  .prose-plain {
+    @apply whitespace-pre-line;
+  }
+
+  .max-w-none {
+    max-width: none;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Touch target */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@layer utilities {
+  /* Viewport height — correct across web (dvh) and Telegram Mini App.
+     main.tsx binds --tg-viewport-stable-height via bindViewportCssVars();
+     on the standalone web build the var is undefined and falls back to 100dvh. */
+  .min-h-viewport {
+    min-height: 100dvh;
+    min-height: var(--tg-viewport-stable-height, 100dvh);
+  }
+  .h-viewport {
+    height: 100dvh;
+    height: var(--tg-viewport-stable-height, 100dvh);
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-accent-400 to-accent-600 bg-clip-text text-transparent;
+  }
+
+  /* Glow effects */
+  .glow-accent {
+    box-shadow: 0 0 20px theme("colors.accent.500 / 30%");
+  }
+
+  .glow-success {
+    box-shadow: 0 0 20px theme("colors.success.500 / 30%");
+  }
+
+  /* Blur backdrop */
+  .blur-backdrop {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Safe area insets for mobile bottom sheets */
+  .safe-area-inset-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 640px) {
+    .safe-area-inset-bottom {
+      padding-bottom: 1.25rem;
+    }
+  }
+}
+
+/* Animations */
+@keyframes bentoFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    theme("colors.dark.800") 0%,
+    theme("colors.dark.700") 50%,
+    theme("colors.dark.800") 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.light .shimmer {
+  background: linear-gradient(
+    90deg,
+    theme("colors.champagne.200") 0%,
+    theme("colors.champagne.300") 50%,
+    theme("colors.champagne.200") 100%
+  );
+}
+
+/* Tap effect on mobile — mechanical translate instead of scale */
+@media (hover: none) {
+  .btn:active,
+  .card-hover:active {
+    transform: translate(1px, 1px);
+  }
+  .nav-item:active {
+    background-color: rgb(var(--color-dark-800));
+  }
+}
+
+/* Color picker range input styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  border-radius: 6px;
+  outline: none;
+  touch-action: pan-x;
+}
+
+/* Desktop: smaller track */
+@media (min-width: 640px) {
+  input[type="range"] {
+    height: 8px;
+    border-radius: 4px;
+  }
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+}
+
+/* Desktop: smaller thumb */
+@media (min-width: 640px) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+/* Desktop: smaller thumb */
+@media (min-width: 640px) {
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Hide number input spinners for cleaner look */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Custom checkbox styling - more visible */
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid rgb(var(--color-dark-600));
+  border-radius: 0.375rem;
+  background-color: rgb(var(--color-dark-700));
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+input[type="checkbox"]:checked {
+  background-color: rgb(var(--color-accent-500));
+  border-color: rgb(var(--color-accent-500));
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--color-accent-500), 0.3);
+}
+
+input[type="checkbox"]:hover:not(:checked) {
+  border-color: rgb(var(--color-dark-500));
+  background-color: rgb(var(--color-dark-600));
+}
+
+/* Recharts: bars, pie sectors and dots become focusable, so clicking one draws
+   the browser's focus outline — a visual artifact on read-only charts. Kill it. */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-wrapper :focus,
+.recharts-wrapper :focus-visible,
+.recharts-surface,
+.recharts-sector,
+.recharts-rectangle {
+  outline: none;
+}
+
+/* react-day-picker (DateField) — themed via the library's CSS variables.
+   The library declares its rdp variables ON .rdp-root, so overriding them on a
+   parent (.rdp-dark) gets shadowed. We must target `.rdp-dark .rdp-root` to win.
+   All colors go through the app's theme tokens (the dark and accent scales),
+   which flip for light themes (e.g. champagne) — so the picker stays legible in
+   every theme without bespoke per-theme rules. */
+.rdp-dark {
+  color: rgb(var(--color-dark-100));
+  font-size: 0.85rem;
+}
+.rdp-dark .rdp-root {
+  --rdp-accent-color: rgb(var(--color-accent-500));
+  --rdp-accent-background-color: rgb(var(--color-accent-500) / 0.18);
+  --rdp-today-color: rgb(var(--color-accent-400));
+  --rdp-day-height: 2.25rem;
+  --rdp-day-width: 2.25rem;
+  --rdp-outside-opacity: 0.4;
+  --rdp-disabled-opacity: 0.4;
+  --rdp-selected-border: none;
+  --rdp-weekday-opacity: 1;
+}
+.rdp-dark .rdp-month_caption,
+.rdp-dark .rdp-caption_label {
+  color: rgb(var(--color-dark-100));
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.rdp-dark .rdp-weekday {
+  color: rgb(var(--color-dark-400));
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.rdp-dark .rdp-day_button {
+  color: rgb(var(--color-dark-100));
+  border: none;
+  border-radius: 0.5rem;
+}
+.rdp-dark .rdp-day_button:hover:not([disabled]) {
+  background-color: rgb(var(--color-dark-700));
+}
+.rdp-dark .rdp-day_button:focus-visible {
+  outline: 2px solid rgb(var(--color-accent-500));
+  outline-offset: 1px;
+}
+/* Today: accent-tinted text + subtle ring (loses to the filled "selected" look). */
+.rdp-dark .rdp-today:not(.rdp-outside) .rdp-day_button {
+  color: rgb(var(--color-accent-400));
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgb(var(--color-accent-500) / 0.45);
+}
+.rdp-dark .rdp-selected .rdp-day_button {
+  background-color: rgb(var(--color-accent-500));
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  box-shadow: none;
+}
+.rdp-dark .rdp-chevron {
+  fill: currentColor;
+}
+.rdp-dark .rdp-button_previous,
+.rdp-dark .rdp-button_next {
+  color: rgb(var(--color-dark-300));
+  border-radius: 0.5rem;
+}
+.rdp-dark .rdp-button_previous:hover:not([disabled]),
+.rdp-dark .rdp-button_next:hover:not([disabled]) {
+  color: rgb(var(--color-dark-100));
+  background-color: rgb(var(--color-dark-700));
+}
+
+.light input[type="checkbox"] {
+  border-color: rgb(var(--color-champagne-400));
+  background-color: rgb(var(--color-champagne-100));
+}
+
+.light input[type="checkbox"]:checked {
+  background-color: rgb(var(--color-accent-500));
+  border-color: rgb(var(--color-accent-500));
+}
+
+.light input[type="checkbox"]:hover:not(:checked) {
+  border-color: rgb(var(--color-champagne-500));
+  background-color: rgb(var(--color-champagne-200));
+}
+
+/* Selection color */
+::selection {
+  @apply bg-accent-500/30 text-dark-50;
+}
+
+.light ::selection {
+  @apply bg-champagne-400/50 text-champagne-950;
+}
+
+/* Onboarding styles */
+.onboarding-overlay {
+  @apply pointer-events-none fixed inset-0 z-[100];
+  background: rgba(0, 0, 0, 0.75);
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.onboarding-spotlight {
+  @apply pointer-events-auto absolute;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.75),
+    0 0 30px rgba(59, 130, 246, 0.4);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.onboarding-tooltip {
+  @apply pointer-events-auto absolute max-w-xs rounded-2xl border border-accent-500/30 bg-dark-900 p-5 shadow-xl shadow-accent-500/10 sm:max-w-sm;
+  animation: scaleInBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.onboarding-tooltip::before {
+  content: "";
+  @apply absolute h-3 w-3 border-l border-t border-accent-500/30 bg-dark-900;
+  transform: rotate(45deg);
+}
+
+/* Light theme onboarding */
+.light .onboarding-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.light .onboarding-spotlight {
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(160, 139, 94, 0.4);
+}
+
+.light .onboarding-tooltip {
+  @apply border-champagne-400/50 bg-white shadow-champagne-500/20;
+}
+
+.light .onboarding-tooltip::before {
+  @apply border-champagne-400/50 bg-white;
+}
+
+.onboarding-tooltip.tooltip-top::before {
+  @apply -bottom-1.5;
+  left: var(--arrow-left, 50%);
+  transform: translateX(-50%) rotate(-135deg);
+}
+
+.onboarding-tooltip.tooltip-bottom::before {
+  @apply -top-1.5;
+  left: var(--arrow-left, 50%);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.onboarding-tooltip.tooltip-left::before {
+  @apply -right-1.5;
+  top: var(--arrow-top, 50%);
+  transform: translateY(-50%) rotate(135deg);
+}
+
+.onboarding-tooltip.tooltip-right::before {
+  @apply -left-1.5;
+  top: var(--arrow-top, 50%);
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+/* Stagger animation utilities */
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+.stagger-4 {
+  animation-delay: 0.2s;
+}
+.stagger-5 {
+  animation-delay: 0.25s;
+}
+.stagger-6 {
+  animation-delay: 0.3s;
+}
+.stagger-7 {
+  animation-delay: 0.35s;
+}
+.stagger-8 {
+  animation-delay: 0.4s;
+}
+
+/* Animation fill mode for stagger */
+.animate-fill-both {
+  animation-fill-mode: both;
+}
+
+/* Smooth page transitions */
+.page-enter {
+  @apply translate-y-4 opacity-0;
+}
+
+.page-enter-active {
+  @apply translate-y-0 opacity-100 transition-all duration-500;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-exit {
+  @apply translate-y-0 opacity-100;
+}
+
+.page-exit-active {
+  @apply -translate-y-4 opacity-0 transition-all duration-300;
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Keyframes for scale in bounce */
+@keyframes scaleInBounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Fortune Wheel animations */
+@keyframes wheel-shimmer {
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: -200% 50%;
+  }
+}
+
+@keyframes wheel-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+  }
+}
+
+@keyframes prize-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-10deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-scale-in {
+  animation: scaleInBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animate-prize-reveal {
+  animation: prize-reveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animate-wheel-glow {
+  animation: wheel-glow 2s ease-in-out infinite;
+}
+
+/* Toast progress bar animation — use scaleX instead of width to avoid layout thrashing */
+@keyframes shrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* News section shimmer */
+@keyframes newsShimmer {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scaleX(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* User preference: reduce motion */
+.reduce-motion,
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ========== SHEET MODAL STYLES ========== */
+
+/* Sheet animations */
+@keyframes sheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheetSlideDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdropFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Page transitions */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pageExit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+.page-enter {
+  animation: pageEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.page-exit {
+  animation: pageExit 0.2s ease-in both;
+}
+
+/* Light theme sheet overrides */
+.light .sheet-backdrop {
+  @apply bg-black/40;
+}
+
+.light .sheet-container {
+  @apply bg-champagne-100;
+}
+
+.light .sheet-handle {
+  @apply bg-champagne-400;
+}
+
+/* ── Admin Panel: Floating Orbs Background ── */
+@keyframes adminOrbFloat {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -40px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 30px) scale(0.95);
+  }
+  100% {
+    transform: translate(10px, -20px) scale(1.02);
+  }
+}
+
+@keyframes adminPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes adminCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes adminItemEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.admin-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  animation: adminOrbFloat 20s ease-in-out infinite alternate;
+}
+
+.light .admin-orb {
+  filter: blur(140px);
+  opacity: 0.15 !important;
+}
+
+/* Mobile: reduce orb count and blur for performance */
+@media (max-width: 1023px) {
+  .admin-orb {
+    filter: blur(80px);
+  }
+  .admin-orb:nth-child(n + 4) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-orb {
+    animation: none;
+  }
+}
+
+/* ── BELAZ Industrial Utilities ── */
+
+/* Hazard stripes — Industrial Yellow / Black diagonal warning tape */
+.hazard-stripes {
+  background: repeating-linear-gradient(
+    45deg,
+    #F4C542,
+    #F4C542 15px,
+    #000000 15px,
+    #000000 30px
+  );
+}
+
+.matte-grain {
+  position: relative;
+}
+.matte-grain::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0.04;
+  pointer-events: none;
+  background-image: url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
+  z-index: 1;
+}
+
+.industrial-border {
+  border: 2px solid rgb(var(--color-dark-600)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 3px 3px 0 0 #000 !important;
+  border-radius: 0px !important;
+}
+
+.brutalist-border {
+  border: 2px solid #000 !important;
+  box-shadow: 4px 4px 0 0 #000 !important;
+  border-radius: 0px !important;
+}
+
+.recessed-panel {
+  box-shadow: inset 3px 3px 6px rgba(0,0,0,0.6), inset -1px -1px 0 rgba(255,255,255,0.03) !important;
+  background: rgb(var(--color-dark-950)) !important;
+  border-radius: 0px !important;
+}
+
+.heavy-btn, .machined-btn, .mechanical-btn {
+  border: 1px solid #000000 !important;
+  box-shadow: 0 4px 0 #000000 !important;
+  transition: all 0.05s !important;
+  border-radius: 0px !important;
+}
+.heavy-btn:active, .machined-btn:active, .mechanical-btn:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 2px 0 #000000 !important;
+}
+
+.toggle-switch {
+  width: 100px;
+  height: 48px;
+  background: #0e0e0f;
+  border: 2px solid #353436;
+  position: relative;
+  cursor: pointer;
+  border-radius: 0px !important;
+}
+.toggle-handle {
+  width: 50%;
+  height: 100%;
+  background: #F4C542;
+  position: absolute;
+  left: 0;
+  transition: left 0.1s steps(2);
+  border: 4px solid #0e0e0f;
+  border-radius: 0px !important;
+}
+.toggle-active .toggle-handle {
+  left: 50%;
+  background: #FF8C00;
+}
+
+.health-lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 0px !important;
+  box-shadow: inset 0 0 3px rgba(0,0,0,0.8);
+}
+.health-lamp.active {
+  background-color: #4CAF50;
+  box-shadow: 0 0 8px #4CAF50, inset 0 0 3px rgba(0,0,0,0.4);
+}
+.health-lamp.alert {
+  background-color: #F44336;
+  box-shadow: 0 0 8px #F44336, inset 0 0 3px rgba(0,0,0,0.4);
+}
+
+/* Skeleton scan \u2014 horizontal sweep like an instrument readout */
+@keyframes skeleton-scan {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* BELAZ Industrial CSS custom properties for inline style use */
+:root {
+  --industrial-yellow: #F4C542;
+  --industrial-black:  #1F1F1F;
+  --industrial-steel:  #3E4349;
+  --industrial-silver: #A4A9AD;
+}
