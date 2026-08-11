@@ -111,23 +111,9 @@ function onColorFor(bgTriplet: string): string {
 
 // Apply theme colors as CSS variables (RGB format for Tailwind opacity support)
 export function applyThemeColors(themeColors: ThemeColors): void {
-  // Lock theme colors to BELAZVPN Technological Brutalism style
-  const colors: ThemeColors = {
-    ...DEFAULT_THEME_COLORS,
-    ...themeColors,
-    accent: '#F4C542',
-    success: '#4CAF50',
-    warning: '#FF8C00',
-    error: '#F4C336',
-    darkBackground: '#131314',
-    darkSurface: '#1A1A1B',
-    darkText: '#e5e2e3',
-    darkTextSecondary: '#d1c5ae',
-    lightBackground: '#131314',
-    lightSurface: '#1A1A1B',
-    lightText: '#e5e2e3',
-    lightTextSecondary: '#d1c5ae',
-  };
+  // Частичный/битый ответ /branding/colors раньше ронял ВСЁ приложение в
+  // ErrorBoundary (hexToRgb(undefined)). Недостающие поля добиваем дефолтами.
+  const colors: ThemeColors = { ...DEFAULT_THEME_COLORS, ...themeColors };
   const root = document.documentElement;
 
   // Generate palettes from status colors
