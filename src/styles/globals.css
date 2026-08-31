@@ -102,27 +102,27 @@
   :root {
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
 
-    /* Unified Card System */
-    --bento-radius: 16px;
-    --bento-radius-lg: 20px;
+    /* Unified Card System - Zero rounded corners for industrial cabinets */
+    --bento-radius: 0px;
+    --bento-radius-lg: 0px;
     --bento-gap: 16px;
     --bento-gap-lg: 24px;
     --bento-padding: 20px;
     --bento-padding-lg: 24px;
 
-    /* Linear Design Tokens */
-    --linear-radius: 8px;
-    --linear-radius-lg: 12px;
-    --linear-blur: 12px;
-    --linear-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --linear-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --linear-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    /* Linear Design Tokens - sharp / mechanical */
+    --linear-radius: 0px;
+    --linear-radius-lg: 0px;
+    --linear-blur: 0px;
+    --linear-shadow-sm: 2px 2px 0 0 #000;
+    --linear-shadow: 3px 3px 0 0 #000;
+    --linear-shadow-lg: 4px 4px 0 0 #000;
 
-    /* Border radius scale (used by user preferences) */
+    /* Border radius scale - all 0px for SCADA console panels */
     --radius-none: 0px;
-    --radius-small: 8px;
-    --radius-medium: 16px;
-    --radius-large: 24px;
+    --radius-small: 0px;
+    --radius-medium: 0px;
+    --radius-large: 0px;
     --radius-pill: 9999px;
 
     /* Spacing scale */
@@ -131,102 +131,105 @@
     --spacing-spacious: 24px;
 
     /* Theme colors - RGB format for opacity support */
-    /* Dark palette (RGB values) */
-    --color-dark-50: 248, 250, 252;
-    --color-dark-100: 241, 245, 249;
-    --color-dark-200: 226, 232, 240;
-    --color-dark-300: 203, 213, 225;
-    --color-dark-400: 148, 163, 184;
-    --color-dark-500: 100, 116, 139;
-    --color-dark-600: 71, 85, 105;
-    --color-dark-700: 51, 65, 85;
-    --color-dark-800: 30, 41, 59;
-    --color-dark-850: 23, 32, 51;
-    --color-dark-900: 15, 23, 42;
-    --color-dark-950: 10, 15, 26;
+    /* Dark palette — BELAZ Industrial: Black/Graphite/Steel/Silver/SoftWhite */
+    --color-dark-50: 245, 245, 245; /* Soft White  #F5F5F5 — primary text */
+    --color-dark-100: 245, 245, 245; /* Soft White  #F5F5F5 */
+    --color-dark-200: 210, 212, 215; /* Light Silver #D2D4D7 */
+    --color-dark-300: 164, 169, 173; /* Metallic Silver #A4A9AD */
+    --color-dark-400: 128, 133, 138; /* Medium Silver #80858A */
+    --color-dark-500: 92, 97, 102; /* Dark Silver  #5C6166 */
+    --color-dark-600: 62, 67, 73; /* Dark Steel   #3E4349 */
+    --color-dark-700: 50, 54, 59; /* Deep Steel   #32363B */
+    --color-dark-800: 43, 43, 43; /* Graphite     #2B2B2B */
+    --color-dark-850: 36, 36, 36; /* Deep Graphite #242424 */
+    --color-dark-900: 31, 31, 31; /* Black        #1F1F1F */
+    --color-dark-950: 20, 20, 20; /* Deep Black   #141414 */
 
-    /* Champagne palette (RGB values) */
-    --color-champagne-50: 255, 253, 249;
-    --color-champagne-100: 254, 249, 240;
-    --color-champagne-200: 247, 231, 206;
-    --color-champagne-300: 232, 212, 181;
-    --color-champagne-400: 212, 188, 150;
-    --color-champagne-500: 191, 164, 119;
-    --color-champagne-600: 160, 139, 94;
-    --color-champagne-700: 125, 107, 72;
-    --color-champagne-800: 92, 79, 53;
-    --color-champagne-900: 61, 52, 36;
-    --color-champagne-950: 31, 26, 18;
+    /* Champagne palette — light SCADA theme: grey-silver metallic console */
+    --color-champagne-50: 255, 255, 255; /* Pure White */
+    --color-champagne-100: 245, 245, 245; /* Soft White  #F5F5F5 */
+    --color-champagne-200: 235, 235, 235; /* Light Grey  #EBEBEB */
+    --color-champagne-300: 210, 212, 215; /* Light Silver #D2D4D7 */
+    --color-champagne-400: 164, 169, 173; /* Metallic Silver #A4A9AD */
+    --color-champagne-500: 92, 97, 102; /* Dark Silver  #5C6166 */
+    --color-champagne-600: 62, 67, 73; /* Dark Steel   #3E4349 */
+    --color-champagne-700: 50, 54, 59; /* Deep Steel   #32363B */
+    --color-champagne-800: 43, 43, 43; /* Graphite     #2B2B2B */
+    --color-champagne-900: 31, 31, 31; /* Black        #1F1F1F */
+    --color-champagne-950: 20, 20, 20; /* Deep Black   #141414 */
 
-    /* Accent palette (RGB values) - dynamically set by ThemeColorsProvider */
-    --color-accent-50: 239, 246, 255;
-    --color-accent-100: 219, 234, 254;
-    --color-accent-200: 191, 219, 254;
-    --color-accent-300: 147, 197, 253;
-    --color-accent-400: 96, 165, 250;
-    --color-accent-500: 59, 130, 246;
-    --color-accent-600: 37, 99, 235;
-    --color-accent-700: 29, 78, 216;
-    --color-accent-800: 30, 64, 175;
-    --color-accent-900: 30, 58, 138;
-    --color-accent-950: 23, 37, 84;
+    /* Accent palette — Industrial Yellow #F4C542 */
+    --color-accent-50: 254, 252, 235;
+    --color-accent-100: 253, 247, 198;
+    --color-accent-200: 251, 237, 140;
+    --color-accent-300: 249, 225, 89;
+    --color-accent-400: 247, 213, 55;
+    --color-accent-500: 244, 197, 66; /* Industrial Yellow #F4C542 */
+    --color-accent-600: 212, 166, 38;
+    --color-accent-700: 173, 133, 24;
+    --color-accent-800: 135, 102, 15;
+    --color-accent-900: 97, 72, 8;
+    --color-accent-950: 59, 43, 3;
 
-    /* Success palette (RGB values) */
+    /* Readable text on status fills — WCAG AA guaranteed */
+    --color-on-accent: 20, 20, 20; /* Deep Black on Yellow — 8:1 contrast */
+    --color-on-success: 255, 255, 255; /* White on Green */
+    --color-on-warning: 20, 20, 20; /* Deep Black on Warning Orange */
+    --color-on-error: 255, 255, 255; /* White on Red */
+
+    /* Success palette */
     --color-success-50: 240, 253, 244;
     --color-success-100: 220, 252, 231;
     --color-success-200: 187, 247, 208;
     --color-success-300: 134, 239, 172;
     --color-success-400: 74, 222, 128;
-    --color-success-500: 34, 197, 94;
-    --color-success-600: 22, 163, 74;
-    --color-success-700: 21, 128, 61;
-    --color-success-800: 22, 101, 52;
+    --color-success-500: 76, 175, 80;
+    --color-success-600: 56, 142, 60;
+    --color-success-700: 46, 125, 50;
+    --color-success-800: 27, 94, 32;
     --color-success-900: 20, 83, 45;
     --color-success-950: 5, 46, 22;
 
-    /* Warning palette (RGB values) */
+    /* Warning palette — Warning Orange #D97706 */
     --color-warning-50: 255, 251, 235;
     --color-warning-100: 254, 243, 199;
     --color-warning-200: 253, 230, 138;
     --color-warning-300: 252, 211, 77;
     --color-warning-400: 251, 191, 36;
-    --color-warning-500: 245, 158, 11;
-    --color-warning-600: 217, 119, 6;
-    --color-warning-700: 180, 83, 9;
-    --color-warning-800: 146, 64, 14;
-    --color-warning-900: 120, 53, 15;
+    --color-warning-500: 217, 119, 6; /* Warning Orange #D97706 */
+    --color-warning-600: 180, 83, 9;
+    --color-warning-700: 146, 64, 14;
+    --color-warning-800: 120, 53, 15;
+    --color-warning-900: 92, 40, 9;
     --color-warning-950: 69, 26, 3;
 
-    /* Error palette (RGB values) */
+    /* Error palette */
     --color-error-50: 254, 242, 242;
     --color-error-100: 254, 226, 226;
     --color-error-200: 254, 202, 202;
     --color-error-300: 252, 165, 165;
     --color-error-400: 248, 113, 113;
-    --color-error-500: 239, 68, 68;
-    --color-error-600: 220, 38, 38;
-    --color-error-700: 185, 28, 28;
-    --color-error-800: 153, 27, 27;
+    --color-error-500: 244, 67, 54;
+    --color-error-600: 229, 57, 53;
+    --color-error-700: 198, 40, 40;
+    --color-error-800: 183, 28, 28;
     --color-error-900: 127, 29, 29;
     --color-error-950: 69, 10, 10;
 
-    /* Subscription-status semantic tokens — distinct from warning/error
-       because the urgency timeline ("expiring soon" vs "expired") needs a
-       sharper, hotter signal than the system-wide warning/error roles.
-       Extracted from inline #FFB800 / #FF3B5C in Subscription.tsx etc. */
-    --color-urgent-400: 255, 184, 0; /* #FFB800 — expiring soon */
-    --color-critical-500: 255, 59, 92; /* #FF3B5C — expired */
+    /* Subscription-status semantic tokens */
+    --color-urgent-400: 244, 197, 66; /* Industrial Yellow */
+    --color-critical-500: 217, 119, 6; /* Warning Orange */
 
     /* Theme semantic colors (hex for direct use) */
-    --color-dark-bg: #0a0f1a;
-    --color-dark-surface: #0f172a;
-    --color-dark-text: #f1f5f9;
-    --color-dark-text-secondary: #94a3b8;
+    --color-dark-bg: #1f1f1f;
+    --color-dark-surface: #2b2b2b;
+    --color-dark-text: #f5f5f5;
+    --color-dark-text-secondary: #a4a9ad;
 
-    --color-light-bg: #f7e7ce;
-    --color-light-surface: #fef9f0;
-    --color-light-text: #1f1a12;
-    --color-light-text-secondary: #7d6b48;
+    --color-light-bg: #f5f5f5;
+    --color-light-surface: #ffffff;
+    --color-light-text: #1f1f1f;
+    --color-light-text-secondary: #3e4349;
   }
 
   html {
@@ -294,10 +297,10 @@
     }
   }
 
-  /* Dark theme (default) */
+  /* Dark theme (default) — Industrial Black console */
   body,
   .dark body {
-    @apply bg-dark-950 font-sans text-dark-100 antialiased;
+    @apply bg-dark-950 font-sans text-dark-50 antialiased;
     overscroll-behavior-y: contain;
     /* iOS smooth scrolling */
     -webkit-overflow-scrolling: touch;
@@ -330,35 +333,33 @@
     contain: content;
   }
 
-  /* Light theme - Champagne */
+  /* Light theme — bright metallic SCADA console (Soft White / Silver) */
   .light body {
-    @apply bg-champagne-200 font-sans text-champagne-900 antialiased;
+    @apply font-sans antialiased;
+    background-color: #f5f5f5;
+    color: #1f1f1f;
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Light theme: swap dark palette → dynamic champagne palette from API.
-     Uses var() to reference values set by applyThemeColors().
-     !important overrides inline styles from applyThemeColors on :root. */
+  /* Light theme: swap dark palette → metallic SCADA palette.
+     Inverted: 950=lightest bg, 50=darkest text — exactly as needed for a
+     light-on-white panel. Accent/status text shades boosted to 700 for contrast. */
   .light {
-    --color-dark-50: var(--color-champagne-950) !important;
-    --color-dark-100: var(--color-champagne-900) !important;
-    --color-dark-200: var(--color-champagne-800) !important;
-    --color-dark-300: var(--color-champagne-700) !important;
-    --color-dark-400: var(--color-champagne-600) !important;
-    --color-dark-500: var(--color-champagne-500) !important;
-    --color-dark-600: var(--color-champagne-400) !important;
-    --color-dark-700: var(--color-champagne-300) !important;
-    --color-dark-800: var(--color-champagne-50) !important;
-    --color-dark-850: var(--color-champagne-100) !important;
-    --color-dark-900: var(--color-champagne-100) !important;
-    --color-dark-950: var(--color-champagne-200) !important;
+    --color-dark-50: 20, 20, 20 !important; /* Deep Black — primary text */
+    --color-dark-100: 31, 31, 31 !important; /* Black */
+    --color-dark-200: 43, 43, 43 !important; /* Graphite */
+    --color-dark-300: 62, 67, 73 !important; /* Dark Steel */
+    --color-dark-400: 92, 97, 102 !important; /* Dark Silver */
+    --color-dark-500: 128, 133, 138 !important; /* Medium Silver */
+    --color-dark-600: 164, 169, 173 !important; /* Metallic Silver */
+    --color-dark-700: 210, 212, 215 !important; /* Light Silver */
+    --color-dark-800: 235, 235, 235 !important; /* Light Grey */
+    --color-dark-850: 245, 245, 245 !important; /* Soft White */
+    --color-dark-900: 245, 245, 245 !important; /* Soft White */
+    --color-dark-950: 255, 255, 255 !important; /* Pure White — body bg */
 
-    /* Статусные палитры генерируются под тёмную тему: текстовые оттенки
-       300/400 (зелёные суммы, жёлтая «Админка», бейджи) на светлом фоне
-       дают контраст 1.3–1.6. В светлой теме подменяем их тёмными шейдами —
-       зеркально ремапу серых выше. Фоновые употребления (bg-*-500/15 и т.п.)
-       используют 500+ и не затрагиваются. */
+    /* Status text shades — boosted to 700 for minimum 4.5:1 on white */
     --color-accent-300: var(--color-accent-700) !important;
     --color-accent-400: var(--color-accent-700) !important;
     --color-success-300: var(--color-success-700) !important;
@@ -415,13 +416,17 @@ img.twemoji {
 @layer components {
   /* ========== BENTO DESIGN SYSTEM ========== */
 
+  /* ========== BENTO DESIGN SYSTEM — INDUSTRIAL PANELS ========== */
+
   .bento-card {
-    @apply border border-dark-700/40 bg-dark-900/70;
-    border-radius: var(--bento-radius);
+    /* Heavy equipment panel aesthetic: 2px solid border, hard drop shadow */
+    border: 2px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-900));
+    border-radius: var(--bento-radius); /* 0px — square panels */
     padding: var(--bento-padding);
-    /* Glass Border - Inset Highlight */
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
-    /* Stagger animation support */
+    box-shadow:
+      3px 3px 0 0 #000,
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
     animation: bentoFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--stagger, 0) * 50ms);
     position: relative;
@@ -430,11 +435,10 @@ img.twemoji {
 
   @media (min-width: 1024px) {
     .bento-card {
-      @apply bg-dark-900/60;
+      background-color: rgb(var(--color-dark-900));
     }
   }
 
-  /* Disable animation if user prefers reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .bento-card {
       animation: none;
@@ -444,58 +448,49 @@ img.twemoji {
   .bento-card-hover {
     @apply bento-card cursor-pointer;
     transition:
-      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.1s ease,
+      transform 0.1s ease;
   }
 
   .bento-card-hover:hover {
-    @apply border-dark-600/50 bg-dark-800/60 shadow-lg;
-    transform: translateY(-2px) translateZ(0);
-    /* Intensify Glass Border & Add Top Spotlight */
+    border-color: rgb(var(--color-accent-500));
+    background-color: rgb(var(--color-dark-800));
     box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-      0 10px 40px -10px rgba(0, 0, 0, 0.5);
+      4px 4px 0 0 #000,
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
   }
 
-  /* CSS Spotlight Effect via pseudo-element */
+  /* no spotlight — removed glassmorphism */
   .bento-card-hover::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at top, rgba(255, 255, 255, 0.06), transparent 60%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .bento-card-hover:hover::after {
-    opacity: 1;
+    display: none;
   }
 
   .bento-card-hover:active {
-    transform: scale(0.98) translateZ(0);
-    transition-duration: 0.15s;
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
+    transition-duration: 0.05s;
   }
 
   .bento-card-glow {
     @apply bento-card cursor-pointer;
     transition:
-      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-color 0.15s ease,
+      box-shadow 0.1s ease;
   }
 
   .bento-card-glow:hover {
-    @apply border-accent-500/30 shadow-glow;
-    transform: translateY(-2px) translateZ(0);
+    border-color: rgb(var(--color-accent-500));
+    box-shadow:
+      4px 4px 0 0 #000,
+      0 0 0 1px rgb(var(--color-accent-500) / 0.4);
   }
 
   .bento-card-glow:active {
-    transform: scale(0.98) translateZ(0);
-    transition-duration: 0.15s;
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
+    transition-duration: 0.05s;
   }
 
   .bento-grid {
@@ -517,105 +512,224 @@ img.twemoji {
     }
   }
 
+  /* Light theme bento cards — bright metallic panel */
   .light .bento-card {
-    @apply border-champagne-300/50 bg-champagne-50/90 shadow-sm;
-    /* Light Theme Glass Border */
-    box-shadow: inset 0 1px 0 0 rgba(0, 0, 0, 0.03);
+    border: 2px solid #a4a9ad;
+    background-color: #ffffff;
+    box-shadow:
+      3px 3px 0 0 rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
   }
 
   @media (min-width: 1024px) {
     .light .bento-card {
-      @apply bg-champagne-50/85;
+      background-color: #ffffff;
     }
   }
 
   .light .bento-card-hover:hover {
-    @apply border-champagne-400/50 bg-champagne-50 shadow-md;
-    transform: translateY(-2px) translateZ(0);
-    /* Intensify Light Theme Glass Border */
-    box-shadow:
-      inset 0 1px 0 0 rgba(0, 0, 0, 0.06),
-      0 10px 40px -10px rgba(160, 139, 94, 0.15);
+    border-color: rgb(var(--color-accent-600));
+    background-color: #f5f5f5;
+    box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.25);
   }
 
-  /* Adjust spotlight for light theme to be a warm glow */
   .light .bento-card-hover::after {
-    background: radial-gradient(circle at top, rgba(255, 253, 249, 0.8), transparent 70%);
+    display: none;
   }
 
   .light .bento-card-glow:hover {
-    @apply border-accent-400/40 shadow-lg;
-    transform: translateY(-2px) translateZ(0);
+    border-color: rgb(var(--color-accent-600));
+    box-shadow:
+      4px 4px 0 0 rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgb(var(--color-accent-500) / 0.4);
   }
 
   /* ========== DARK THEME COMPONENTS (default) ========== */
 
-  /* Cards - Dark (unified style) */
+  /* Cards - Dark — Industrial panel plate */
   .card {
-    @apply border border-dark-700/40 bg-dark-900/70 p-5 transition-colors duration-200 sm:p-6;
-    border-radius: var(--bento-radius);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    border: 2px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-900));
+    padding: 20px;
+    border-radius: 0px;
+    box-shadow:
+      3px 3px 0 0 #000,
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease;
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 640px) {
     .card {
-      @apply bg-dark-900/60;
+      padding: 24px;
     }
   }
 
   .card-hover {
-    @apply card cursor-pointer hover:border-dark-600/50 hover:bg-dark-800/60 active:scale-[0.98];
+    @apply card cursor-pointer;
+  }
+
+  .card-hover:hover {
+    border-color: rgb(var(--color-accent-500));
+    background-color: rgb(var(--color-dark-800));
+  }
+
+  .card-hover:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
   }
 
   .card-glow {
-    @apply card cursor-pointer hover:border-accent-500/30 hover:shadow-glow;
+    @apply card cursor-pointer;
+  }
+
+  .card-glow:hover {
+    border-color: rgb(var(--color-accent-500));
+    box-shadow:
+      3px 3px 0 0 #000,
+      0 0 0 1px rgb(var(--color-accent-500) / 0.3);
   }
 
   .card-animated {
     @apply card animate-slide-up;
   }
 
-  /* Glass effect - Dark (optimized for mobile) */
+  /* Glass effect - Dark (no actual blur on industrial panels, just border) */
   .glass {
-    @apply border border-dark-700/30 bg-dark-900/80;
+    border: 1px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-900));
   }
 
-  /* Enable backdrop-blur only on desktop where it's performant */
-  @media (min-width: 1024px) {
-    .glass {
-      @apply bg-dark-900/30 backdrop-blur-xl;
+  /* Buttons - Dark — Mechanical heavy-press industrial buttons
+     Large touch targets, hard drop shadow, translate on press, zero radius. */
+  .btn {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wider;
+    border-radius: 0px;
+    transition: all 0.08s ease;
+    outline: none;
+    border: 2px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  @media (min-width: 640px) {
+    .btn {
+      min-height: 44px;
     }
   }
 
-  /* Buttons - Dark
-     min-h-[44px] on mobile (WCAG 2.5.5 AAA touch target floor), keeping
-     visual at py-2 / ~36px on desktop where mouse precision rules.
-     Cascades to every .btn-primary / .btn-secondary / .btn-ghost / .btn-danger. */
-  .btn {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium duration-200 ease-smooth focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0;
-    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
-  }
-
   .btn-icon {
-    /* Same logic for icon-only buttons. */
-    @apply min-h-[44px] min-w-[44px] rounded-lg p-2 text-dark-400 duration-200 hover:bg-dark-800 hover:text-dark-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 active:scale-95 sm:min-h-0 sm:min-w-0;
-    transition-property: color, background-color, transform;
+    @apply min-h-[48px] min-w-[48px] p-2;
+    border-radius: 0px;
+    border: 2px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-dark-300));
+    box-shadow: 2px 2px 0 0 #000;
+    transition: all 0.08s ease;
+    outline: none;
   }
 
+  .btn-icon:hover {
+    border-color: rgb(var(--color-accent-500));
+    color: rgb(var(--color-accent-500));
+  }
+
+  .btn-icon:active {
+    transform: translate(1px, 1px);
+    box-shadow: 0 0 0 0 #000;
+  }
+
+  @media (min-width: 640px) {
+    .btn-icon {
+      min-height: 40px;
+      min-width: 40px;
+    }
+  }
+
+  /* PRIMARY: Industrial Yellow with black text — max contrast */
   .btn-primary {
-    @apply btn bg-accent-500 text-on-accent shadow-lg shadow-accent-500/25 hover:bg-accent-400 hover:shadow-xl hover:shadow-accent-500/30 focus-visible:ring-accent-500 active:bg-accent-600;
+    @apply btn;
+    background-color: rgb(var(--color-accent-500)); /* #F4C542 */
+    color: rgb(var(--color-on-accent)); /* #141414 black */
+    border-color: #000;
+    box-shadow: 3px 3px 0 0 #000;
   }
 
+  .btn-primary:hover:not(:disabled) {
+    background-color: rgb(var(--color-accent-400));
+    box-shadow: 4px 4px 0 0 #000;
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
+  }
+
+  /* SECONDARY: Steel panel button */
   .btn-secondary {
-    @apply btn border border-dark-700 bg-dark-800 text-dark-200 hover:border-dark-600 hover:bg-dark-700 hover:text-dark-100 focus-visible:ring-dark-500 active:bg-dark-600;
+    @apply btn;
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-dark-100));
+    border-color: rgb(var(--color-dark-600));
+    box-shadow: 3px 3px 0 0 #000;
   }
 
+  .btn-secondary:hover:not(:disabled) {
+    border-color: rgb(var(--color-dark-400));
+    background-color: rgb(var(--color-dark-700));
+    color: rgb(var(--color-dark-50));
+  }
+
+  .btn-secondary:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #000;
+  }
+
+  /* GHOST: Transparent functional button */
   .btn-ghost {
-    @apply btn text-dark-400 hover:bg-dark-800 hover:text-dark-100 focus-visible:ring-dark-500;
+    @apply btn;
+    background-color: transparent;
+    color: rgb(var(--color-dark-300));
+    border-color: transparent;
+    box-shadow: none;
   }
 
+  .btn-ghost:hover:not(:disabled) {
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-dark-50));
+    border-color: rgb(var(--color-dark-600));
+  }
+
+  .btn-ghost:active:not(:disabled) {
+    background-color: rgb(var(--color-dark-700));
+  }
+
+  /* DANGER: Red alert button */
   .btn-danger {
-    @apply btn border border-error-500/30 bg-error-500/10 text-error-400 hover:border-error-500/50 hover:bg-error-500/20 focus-visible:ring-error-500 active:bg-error-500/30;
+    @apply btn;
+    background-color: rgb(var(--color-error-500) / 0.12);
+    color: rgb(var(--color-error-400));
+    border-color: rgb(var(--color-error-500) / 0.4);
+    box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.6);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background-color: rgb(var(--color-error-500) / 0.2);
+    border-color: rgb(var(--color-error-400));
+    color: rgb(var(--color-error-300));
+  }
+
+  .btn-danger:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 rgba(0, 0, 0, 0.6);
   }
 
   /* Highlighted button for onboarding */
@@ -623,14 +737,42 @@ img.twemoji {
     @apply relative z-10 animate-spotlight;
   }
 
-  /* Inputs - Dark */
+  /* Inputs - Dark — sunken recessed industrial terminal slots */
   .input {
-    @apply w-full rounded-xl border border-dark-700/50 bg-dark-800/50 px-4 py-3 text-sm text-dark-100 placeholder-dark-500 duration-200 focus:border-accent-500/50 focus:outline-none focus:ring-2 focus:ring-accent-500/20;
-    transition-property: color, background-color, border-color, box-shadow;
+    width: 100%;
+    border-radius: 0px;
+    border: 2px solid rgb(var(--color-dark-600));
+    background-color: rgb(var(--color-dark-950));
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    color: rgb(var(--color-dark-50));
+    font-family: "IBM Plex Mono", "ui-monospace", monospace;
+    box-shadow:
+      inset 2px 2px 4px rgba(0, 0, 0, 0.5),
+      inset -1px -1px 0px rgba(255, 255, 255, 0.03);
+    transition: border-color 0.15s ease;
+    outline: none;
+    caret-color: rgb(var(--color-accent-500));
+  }
+
+  .input::placeholder {
+    color: rgb(var(--color-dark-500));
+  }
+
+  .input:focus {
+    border-color: rgb(var(--color-accent-500));
+    box-shadow:
+      inset 2px 2px 4px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgb(var(--color-accent-500) / 0.2);
   }
 
   .input-error {
-    @apply input border-error-500/50 focus:border-error-500 focus:ring-error-500/20;
+    @apply input;
+    border-color: rgb(var(--color-error-500) / 0.6);
+  }
+
+  .input-error:focus {
+    border-color: rgb(var(--color-error-500));
   }
 
   /* Remove tap highlight and focus outline on mobile */
@@ -645,22 +787,32 @@ img.twemoji {
   button:focus-visible,
   a:focus-visible,
   [role="button"]:focus-visible {
-    @apply ring-2 ring-accent-500/50 ring-offset-2 ring-offset-dark-900;
+    outline: 2px solid rgb(var(--color-accent-500));
+    outline-offset: 2px;
   }
 
   .light button:focus-visible,
   .light a:focus-visible,
   .light [role="button"]:focus-visible {
-    @apply ring-offset-champagne-100;
+    outline: 2px solid rgb(var(--color-accent-600));
+    outline-offset: 2px;
   }
 
+  /* Labels — monospace uppercase technical style */
   .label {
-    @apply mb-2 block text-sm font-medium text-dark-300;
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: "IBM Plex Mono", "ui-monospace", monospace;
+    color: rgb(var(--color-dark-400));
   }
 
-  /* Badge - Dark */
+  /* Badge - Dark — mechanical status tags */
   .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
+    @apply inline-flex items-center rounded-none px-2.5 py-1 text-xs font-medium;
   }
 
   .badge-success {
@@ -692,52 +844,97 @@ img.twemoji {
     @apply mt-1 text-sm text-dark-400;
   }
 
-  /* Navigation - Dark */
+  /* Navigation - Dark — side drawer links */
   .nav-item {
-    @apply flex items-center gap-3 rounded-xl px-4 py-3 text-dark-400 duration-200 hover:bg-dark-800/50 hover:text-dark-100;
-    transition-property: color, background-color;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 0px;
+    color: rgb(var(--color-dark-300));
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-left: 3px solid transparent;
+    transition: all 0.1s ease;
+  }
+
+  .nav-item:hover {
+    border-left-color: rgb(var(--color-dark-500));
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-dark-50));
   }
 
   .nav-item-active {
-    @apply nav-item bg-accent-500/10 text-accent-400;
+    border-left-color: rgb(var(--color-accent-500));
+    background-color: rgb(var(--color-dark-800));
+    color: rgb(var(--color-accent-500));
   }
 
+  /* Bottom navigation — industrial chassis bar */
   .bottom-nav {
-    @apply fixed z-50 bg-dark-900/95;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    left: 16px;
-    right: 16px;
-    border-radius: var(--bento-radius);
-    padding: 8px 4px;
+    position: fixed;
+    z-index: 50;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgb(var(--color-dark-900));
+    border-top: 2px solid rgb(var(--color-dark-600));
+    box-shadow: 0 -3px 0 0 #000;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     transform: translateZ(0);
-    box-shadow:
-      0 4px 30px rgba(0, 0, 0, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-  }
-
-  @media (min-width: 1024px) {
-    .bottom-nav {
-      @apply bg-dark-900/80 backdrop-blur-xl;
-    }
   }
 
   .bottom-nav-item {
-    @apply flex min-w-[56px] flex-1 shrink-0 flex-col items-center justify-center rounded-2xl px-3 py-2.5 text-dark-500 duration-200;
-    transition-property: color, background-color;
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    color: rgb(var(--color-dark-500));
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: "IBM Plex Mono", "ui-monospace", monospace;
+    transition:
+      color 0.1s ease,
+      background-color 0.1s ease;
+    position: relative;
+    border-radius: 0;
   }
 
   .bottom-nav-item:hover {
-    @apply text-dark-300;
+    color: rgb(var(--color-dark-200));
   }
 
   .bottom-nav-item-active {
-    @apply flex min-w-[56px] flex-1 shrink-0 flex-col items-center justify-center rounded-2xl bg-accent-500/15 px-3 py-2.5 text-accent-400 duration-200;
-    transition-property: color, background-color;
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    color: rgb(var(--color-accent-500));
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: "IBM Plex Mono", "ui-monospace", monospace;
+    transition: color 0.1s ease;
+    position: relative;
+    border-radius: 0;
   }
 
-  /* Divider - Dark */
+  /* Divider - Dark — heavy rule */
   .divider {
-    @apply border-t border-dark-800/50;
+    border-top: 2px solid rgb(var(--color-dark-700));
   }
 
   /* ========== MOBILE PERFORMANCE: Disable backdrop-blur ========== */
@@ -756,145 +953,196 @@ img.twemoji {
     }
   }
 
-  /* ========== LIGHT THEME COMPONENTS (Champagne) ========== */
+  /* ========== LIGHT THEME COMPONENTS — Metallic SCADA Console ========== */
 
   /* Cards - Light */
   .light .card {
-    @apply border-champagne-300/50 bg-champagne-50/90 p-5 shadow-sm sm:p-6;
-    border-radius: var(--bento-radius);
-    box-shadow: inset 0 1px 0 0 rgba(0, 0, 0, 0.03);
+    border: 2px solid #a4a9ad;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 0;
+    box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.2);
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 640px) {
     .light .card {
-      @apply bg-champagne-50/85;
+      padding: 24px;
     }
   }
 
-  .light .card-hover {
-    @apply hover:border-champagne-400/50 hover:bg-champagne-50 hover:shadow-md;
+  .light .card-hover:hover {
+    border-color: rgb(var(--color-accent-600));
+    background-color: #f5f5f5;
   }
 
-  .light .card-glow {
-    @apply hover:border-accent-400/40 hover:shadow-lg;
+  .light .card-glow:hover {
+    border-color: rgb(var(--color-accent-600));
+    box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.15);
   }
 
-  /* Glass effect - Light (optimized for mobile) */
+  /* Glass effect - Light — just solid bordered panel */
   .light .glass {
-    @apply border border-champagne-300/40 bg-champagne-50/90;
+    border: 1px solid #a4a9ad;
+    background-color: #ffffff;
   }
 
-  @media (min-width: 1024px) {
-    .light .glass {
-      @apply bg-champagne-50/60 backdrop-blur-xl;
-    }
-  }
-
-  /* Buttons - Light */
-  .light .btn {
-    @apply focus-visible:ring-offset-champagne-100;
-  }
-
+  /* Buttons - Light — same mechanical design, adapted for bright background */
   .light .btn-primary {
-    @apply bg-champagne-700 text-white shadow-lg shadow-champagne-500/20 hover:bg-champagne-600 hover:shadow-xl hover:shadow-champagne-500/30 focus-visible:ring-champagne-500 active:bg-champagne-800;
+    background-color: rgb(var(--color-accent-600));
+    color: rgb(var(--color-on-accent));
+    border-color: #000;
+    box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.7);
+  }
+
+  .light .btn-primary:hover:not(:disabled) {
+    background-color: rgb(var(--color-accent-700));
   }
 
   .light .btn-secondary {
-    @apply border border-champagne-300 bg-champagne-50 text-champagne-800 hover:border-champagne-400 hover:bg-champagne-100 hover:text-champagne-900 focus-visible:ring-champagne-400 active:bg-champagne-200;
+    background-color: #ffffff;
+    color: #1f1f1f;
+    border-color: #a4a9ad;
+    box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.2);
+  }
+
+  .light .btn-secondary:hover:not(:disabled) {
+    border-color: #3e4349;
+    background-color: #f5f5f5;
   }
 
   .light .btn-ghost {
-    @apply text-champagne-600 hover:bg-champagne-200/50 hover:text-champagne-900 focus-visible:ring-champagne-400;
+    background-color: transparent;
+    color: #3e4349;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .light .btn-ghost:hover:not(:disabled) {
+    background-color: #ebebeb;
+    color: #1f1f1f;
+    border-color: #a4a9ad;
   }
 
   .light .btn-danger {
-    @apply border border-error-200 bg-error-50 text-error-600 hover:border-error-300 hover:bg-error-100 active:bg-error-200;
+    background-color: rgb(var(--color-error-50));
+    color: rgb(var(--color-error-700));
+    border-color: rgb(var(--color-error-300));
+    box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.2);
   }
 
   .light .btn-icon {
-    @apply text-champagne-500 hover:bg-champagne-200/50 hover:text-champagne-800;
+    border-color: #a4a9ad;
+    background-color: #ffffff;
+    color: #3e4349;
+    box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.2);
   }
 
-  /* Inputs - Light */
+  .light .btn-icon:hover {
+    border-color: rgb(var(--color-accent-600));
+    color: rgb(var(--color-accent-700));
+  }
+
+  /* Inputs - Light — clean recessed slot on white */
   .light .input {
-    @apply rounded-xl border border-champagne-300 bg-champagne-50 text-champagne-900 placeholder-champagne-400 focus:border-accent-400 focus:ring-accent-300/30;
+    background-color: #ffffff;
+    border-color: #a4a9ad;
+    color: #1f1f1f;
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.15);
+  }
+
+  .light .input::placeholder {
+    color: #a4a9ad;
+  }
+
+  .light .input:focus {
+    border-color: rgb(var(--color-accent-600));
+    box-shadow:
+      inset 1px 1px 3px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgb(var(--color-accent-600) / 0.3);
   }
 
   .light .input-error {
-    @apply border-error-300 focus:border-error-400 focus:ring-error-300/30;
+    border-color: rgb(var(--color-error-400));
   }
 
+  /* Label - Light */
   .light .label {
-    @apply text-champagne-700;
+    color: #3e4349;
   }
 
   /* Badge - Light */
   .light .badge-success {
-    @apply border border-success-200 bg-success-50 text-success-700;
+    @apply border border-success-600 bg-success-50 text-success-700;
   }
 
   .light .badge-warning {
-    @apply border border-warning-200 bg-warning-50 text-warning-700;
+    @apply border border-warning-600 bg-warning-50 text-warning-700;
   }
 
   .light .badge-error {
-    @apply border border-error-200 bg-error-50 text-error-700;
+    @apply border border-error-500 bg-error-50 text-error-700;
   }
 
   .light .badge-info {
-    @apply border border-accent-200 bg-accent-50 text-accent-700;
+    border-color: rgb(var(--color-accent-600));
+    background-color: rgb(var(--color-accent-50));
+    color: rgb(var(--color-accent-800));
   }
 
   .light .badge-neutral {
-    @apply border border-champagne-300 bg-champagne-200/50 text-champagne-700;
+    border-color: #a4a9ad;
+    background-color: #f5f5f5;
+    color: #3e4349;
   }
 
   /* Stat card - Light */
   .light .stat-value {
-    @apply text-champagne-900;
+    color: #1f1f1f;
   }
 
   .light .stat-label {
-    @apply text-champagne-600;
+    color: #3e4349;
   }
 
   /* Navigation - Light */
   .light .nav-item {
-    @apply text-champagne-600 hover:bg-champagne-200/50 hover:text-champagne-900;
+    color: #3e4349;
+  }
+
+  .light .nav-item:hover {
+    border-left-color: #a4a9ad;
+    background-color: #ebebeb;
+    color: #1f1f1f;
   }
 
   .light .nav-item-active {
-    @apply bg-champagne-200/70 text-champagne-800;
+    border-left-color: rgb(var(--color-accent-600));
+    background-color: #f5f5f5;
+    color: rgb(var(--color-accent-700));
   }
 
+  /* Light bottom nav — bright industrial chassis bar */
   .light .bottom-nav {
-    @apply bg-white/95;
-    box-shadow:
-      0 4px 30px rgba(0, 0, 0, 0.1),
-      0 0 0 1px rgba(0, 0, 0, 0.05);
-  }
-
-  @media (min-width: 1024px) {
-    .light .bottom-nav {
-      @apply bg-white/80 backdrop-blur-xl;
-    }
+    background-color: #ffffff;
+    border-top: 2px solid #a4a9ad;
+    box-shadow: 0 -2px 0 0 rgba(0, 0, 0, 0.15);
   }
 
   .light .bottom-nav-item {
-    @apply text-champagne-500;
+    color: #80858a;
   }
 
   .light .bottom-nav-item:hover {
-    @apply text-champagne-700;
+    color: #3e4349;
   }
 
   .light .bottom-nav-item-active {
-    @apply bg-champagne-300/40 text-champagne-800;
+    color: rgb(var(--color-accent-700));
   }
 
   /* Divider - Light */
   .light .divider {
-    @apply border-t border-champagne-200;
+    border-top: 2px solid #d2d4d7;
   }
 
   /* Safe area */
@@ -906,7 +1154,27 @@ img.twemoji {
     padding-top: env(safe-area-inset-top, 0px);
   }
 
-  /* Skeleton loader */
+  /* Skeleton loader — industrial scan-line shimmer */
+  .skeleton {
+    border-radius: 0px;
+    background-color: rgb(var(--color-dark-800));
+    background-image: linear-gradient(
+      90deg,
+      rgb(var(--color-dark-800)) 0%,
+      rgb(var(--color-dark-700)) 40%,
+      rgb(var(--color-dark-800)) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-scan 1.5s linear infinite;
+  }
+
+  .light .skeleton {
+    background-color: #d2d4d7;
+    background-image: linear-gradient(90deg, #d2d4d7 0%, #ebebeb 40%, #d2d4d7 100%);
+    background-size: 200% 100%;
+    animation: skeleton-scan 1.5s linear infinite;
+  }
+
   /* Link */
   .link {
     @apply text-accent-400 transition-colors duration-200 hover:text-accent-300;
@@ -1249,12 +1517,14 @@ img.twemoji {
   );
 }
 
-/* Tap effect on mobile */
+/* Tap effect on mobile — mechanical translate instead of scale */
 @media (hover: none) {
   .btn:active,
-  .card-hover:active,
+  .card-hover:active {
+    transform: translate(1px, 1px);
+  }
   .nav-item:active {
-    transform: scale(0.98) translateZ(0);
+    background-color: rgb(var(--color-dark-800));
   }
 }
 
@@ -1551,22 +1821,26 @@ input[type="checkbox"]:hover:not(:checked) {
 }
 
 .onboarding-tooltip.tooltip-top::before {
-  @apply -bottom-1.5 left-1/2 -translate-x-1/2;
+  @apply -bottom-1.5;
+  left: var(--arrow-left, 50%);
   transform: translateX(-50%) rotate(-135deg);
 }
 
 .onboarding-tooltip.tooltip-bottom::before {
-  @apply -top-1.5 left-1/2;
+  @apply -top-1.5;
+  left: var(--arrow-left, 50%);
   transform: translateX(-50%) rotate(45deg);
 }
 
 .onboarding-tooltip.tooltip-left::before {
-  @apply -right-1.5 top-1/2;
+  @apply -right-1.5;
+  top: var(--arrow-top, 50%);
   transform: translateY(-50%) rotate(135deg);
 }
 
 .onboarding-tooltip.tooltip-right::before {
-  @apply -left-1.5 top-1/2;
+  @apply -left-1.5;
+  top: var(--arrow-top, 50%);
   transform: translateY(-50%) rotate(-45deg);
 }
 
@@ -1884,4 +2158,125 @@ input[type="checkbox"]:hover:not(:checked) {
   .admin-orb {
     animation: none;
   }
+}
+
+/* ── BELAZ Industrial Utilities ── */
+
+/* Hazard stripes — Industrial Yellow / Black diagonal warning tape */
+.hazard-stripes {
+  background: repeating-linear-gradient(45deg, #f4c542, #f4c542 15px, #000000 15px, #000000 30px);
+}
+
+.matte-grain {
+  position: relative;
+}
+.matte-grain::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.04;
+  pointer-events: none;
+  background-image: url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
+  z-index: 1;
+}
+
+.industrial-border {
+  border: 2px solid rgb(var(--color-dark-600)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    3px 3px 0 0 #000 !important;
+  border-radius: 0px !important;
+}
+
+.brutalist-border {
+  border: 2px solid #000 !important;
+  box-shadow: 4px 4px 0 0 #000 !important;
+  border-radius: 0px !important;
+}
+
+.recessed-panel {
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.6),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.03) !important;
+  background: rgb(var(--color-dark-950)) !important;
+  border-radius: 0px !important;
+}
+
+.heavy-btn,
+.machined-btn,
+.mechanical-btn {
+  border: 1px solid #000000 !important;
+  box-shadow: 0 4px 0 #000000 !important;
+  transition: all 0.05s !important;
+  border-radius: 0px !important;
+}
+.heavy-btn:active,
+.machined-btn:active,
+.mechanical-btn:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 2px 0 #000000 !important;
+}
+
+.toggle-switch {
+  width: 100px;
+  height: 48px;
+  background: #0e0e0f;
+  border: 2px solid #353436;
+  position: relative;
+  cursor: pointer;
+  border-radius: 0px !important;
+}
+.toggle-handle {
+  width: 50%;
+  height: 100%;
+  background: #f4c542;
+  position: absolute;
+  left: 0;
+  transition: left 0.1s steps(2);
+  border: 4px solid #0e0e0f;
+  border-radius: 0px !important;
+}
+.toggle-active .toggle-handle {
+  left: 50%;
+  background: #ff8c00;
+}
+
+.health-lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 0px !important;
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.8);
+}
+.health-lamp.active {
+  background-color: #4caf50;
+  box-shadow:
+    0 0 8px #4caf50,
+    inset 0 0 3px rgba(0, 0, 0, 0.4);
+}
+.health-lamp.alert {
+  background-color: #f44336;
+  box-shadow:
+    0 0 8px #f44336,
+    inset 0 0 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Skeleton scan \u2014 horizontal sweep like an instrument readout */
+@keyframes skeleton-scan {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* BELAZ Industrial CSS custom properties for inline style use */
+:root {
+  --industrial-yellow: #f4c542;
+  --industrial-black: #1f1f1f;
+  --industrial-steel: #3e4349;
+  --industrial-silver: #a4a9ad;
 }

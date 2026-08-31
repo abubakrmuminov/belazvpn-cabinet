@@ -40,12 +40,12 @@
     "rangeTo": "до"
   },
   "nav": {
-    "dashboard": "Главная",
-    "subscription": "Подписка",
-    "balance": "Баланс",
+    "dashboard": "Панель управления",
+    "subscription": "Лицензия",
+    "balance": "Баланс узла",
     "referral": "Рефералы",
-    "support": "Поддержка",
-    "profile": "Профиль",
+    "support": "Связь",
+    "profile": "Оператор",
     "logout": "Выйти",
     "contests": "Конкурсы",
     "polls": "Опросы",
