@@ -6,9 +6,9 @@ import { motion } from 'framer-motion';
 import { balanceApi } from '../api/balance';
 import { useCurrency } from '../hooks/useCurrency';
 import { Card } from '@/components/data-display/Card';
-import { PageHeader } from '@/components/common/PageHeader';
 import { staggerContainer, staggerItem } from '@/components/motion/transitions';
 import PaymentMethodIcon from '@/components/PaymentMethodIcon';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 
 export default function TopUpMethodSelect() {
   const { t } = useTranslation();
@@ -39,15 +39,17 @@ export default function TopUpMethodSelect() {
       animate="animate"
     >
       <motion.div variants={staggerItem}>
-        <PageHeader title={t('balance.selectPaymentMethod')} />
+        <h1 className="text-2xl font-bold text-dark-50 sm:text-3xl">
+          {t('balance.selectPaymentMethod')}
+        </h1>
       </motion.div>
 
       <motion.div variants={staggerItem}>
         <Card>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-            </div>
+            <SkeletonGroup className="space-y-3">
+              <Skeleton variant="card" count={3} className="h-16" />
+            </SkeletonGroup>
           ) : !paymentMethods || paymentMethods.length === 0 ? (
             <div className="py-6 text-center text-sm text-dark-400">
               {t('balance.noPaymentMethods')}

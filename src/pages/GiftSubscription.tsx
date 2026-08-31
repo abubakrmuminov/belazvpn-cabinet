@@ -1,11 +1,18 @@
 import { uiLocale } from '@/utils/uiLocale';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams, Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { giftApi } from '../api/gift';
+import {
+  canUseTelegramScanner,
+  loadHtml5Qrcode,
+  parseGiftCode,
+  scanWithTelegram,
+  type Html5QrcodeInstance,
+} from '@/utils/qrScanner';
 import { brandingApi, type TelegramWidgetConfig } from '../api/branding';
 import type {
   GiftConfig,
@@ -19,11 +26,13 @@ import type {
 
 import { cn } from '../lib/utils';
 import { copyToClipboard } from '../utils/clipboard';
+import { buildGiftClaimArtifacts } from '../utils/giftShare';
 import { getApiErrorMessage } from '../utils/api-error';
 import { formatPrice } from '../utils/format';
 import { useCurrency } from '../hooks/useCurrency';
 import { usePlatform, useHaptic } from '@/platform';
 import { openPaymentUrl } from '../utils/openPaymentUrl';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import {
   SparklesIcon,
   GiftIcon,
@@ -35,8 +44,6 @@ import {
   WarningCircleIcon,
   BanIcon,
 } from '@/components/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { EmptyState } from '@/components/common/EmptyState';
 
 function formatPeriodLabel(
   days: number,
@@ -90,7 +97,7 @@ function LoadingSkeleton() {
   return (
     <div className="flex min-h-dvh items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="h-8 w-8 animate-spin border-2 border-dark-600 border-t-accent-500" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-dark-600 border-t-accent-500" />
       </div>
     </div>
   );
@@ -102,7 +109,7 @@ function ErrorState({ message }: { message: string }) {
   return (
     <div className="flex min-h-dvh items-center justify-center px-4">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center border border-error-500/30 bg-error-500/10">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-error-500/10">
           <WarningCircleIcon className="h-8 w-8 text-error-400" />
         </div>
         <h2 className="text-lg font-semibold text-dark-50">{t('gift.failedTitle')}</h2>
@@ -124,7 +131,7 @@ function DisabledState() {
   return (
     <div className="flex min-h-dvh items-center justify-center px-4">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center border border-dark-700 bg-dark-800/50">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-dark-800/50">
           <BanIcon className="h-8 w-8 text-dark-400" />
         </div>
         <h2 className="text-lg font-semibold text-dark-50">{t('gift.featureDisabled')}</h2>
@@ -152,7 +159,7 @@ function TariffCard({
       aria-checked={isSelected}
       onClick={onSelect}
       className={cn(
-        'flex w-full items-center gap-4 rounded-none border p-4 text-start transition-all duration-200',
+        'flex w-full items-center gap-4 rounded-2xl border p-4 text-start transition-all duration-200',
         isSelected
           ? 'border-accent-500/50 bg-accent-500/5'
           : 'border-dark-800/50 bg-dark-900/50 hover:border-dark-700/50',
@@ -161,8 +168,8 @@ function TariffCard({
       {/* Gift circle icon */}
       <div
         className={cn(
-          'flex h-12 w-12 shrink-0 items-center justify-center border transition-colors',
-          isSelected ? 'border-accent-500/40 bg-accent-500/20' : 'border-dark-700 bg-dark-800/50',
+          'flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors',
+          isSelected ? 'bg-accent-500/20' : 'bg-dark-800/50',
         )}
       >
         <GiftIcon
@@ -221,7 +228,7 @@ function PeriodCard({
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex w-full items-center justify-between rounded-none p-4 transition-all duration-200',
+        'flex w-full items-center justify-between rounded-2xl p-4 transition-all duration-200',
         isSelected
           ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-lg shadow-accent-500/25'
           : 'bg-dark-800/50 hover:bg-dark-700/50',
@@ -233,7 +240,7 @@ function PeriodCard({
         {hasDiscount && period.discount_percent != null && (
           <span
             className={cn(
-              'rounded-none px-2 py-0.5 text-xs font-bold',
+              'rounded-md px-2 py-0.5 text-xs font-bold',
               isSelected ? 'bg-white/20 text-on-accent' : 'bg-accent-500/20 text-accent-400',
             )}
           >
@@ -274,14 +281,14 @@ function PaymentModeToggle({
     <div
       role="group"
       aria-label={t('gift.paymentMode')}
-      className="flex rounded-none bg-dark-800/50 p-1"
+      className="flex rounded-xl bg-dark-800/50 p-1"
     >
       <button
         type="button"
         onClick={() => onToggle('balance')}
         aria-pressed={mode === 'balance'}
         className={cn(
-          'flex-1 rounded-none px-4 py-2.5 text-sm font-medium transition-all duration-200',
+          'flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200',
           mode === 'balance'
             ? 'bg-dark-700 text-dark-50 shadow-sm'
             : 'text-dark-400 hover:text-dark-200',
@@ -294,7 +301,7 @@ function PaymentModeToggle({
         onClick={() => onToggle('gateway')}
         aria-pressed={mode === 'gateway'}
         className={cn(
-          'flex-1 rounded-none px-4 py-2.5 text-sm font-medium transition-all duration-200',
+          'flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200',
           mode === 'gateway'
             ? 'bg-dark-700 text-dark-50 shadow-sm'
             : 'text-dark-400 hover:text-dark-200',
@@ -324,7 +331,7 @@ function PaymentMethodCard({
   return (
     <div
       className={cn(
-        'rounded-none border transition-all duration-200',
+        'rounded-2xl border transition-all duration-200',
         isSelected
           ? 'border-accent-500/50 bg-accent-500/5'
           : 'border-dark-800/50 bg-dark-900/50 hover:border-dark-700/50',
@@ -338,7 +345,7 @@ function PaymentMethodCard({
         className="flex w-full items-center gap-4 p-4 text-start"
       >
         {method.icon_url && (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-none bg-dark-800/50">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-dark-800/50">
             <img src={method.icon_url} alt="" className="h-6 w-6 object-contain" />
           </div>
         )}
@@ -367,7 +374,7 @@ function PaymentMethodCard({
                 type="button"
                 onClick={() => onSelectSubOption(opt.id)}
                 className={cn(
-                  'rounded-none px-4 py-2 text-sm font-medium transition-all duration-200',
+                  'rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200',
                   selectedSubOption === opt.id
                     ? 'bg-accent-500 text-on-accent shadow-sm shadow-accent-500/25'
                     : 'bg-dark-800/50 text-dark-300 hover:bg-dark-700/50',
@@ -565,15 +572,15 @@ function BuyTabContent({
 
       {/* Selected tariff description */}
       {selectedTariff?.description && (
-        <div className="rounded-none border border-dark-800/30 bg-dark-800/20 px-4 py-3">
+        <div className="rounded-xl border border-dark-800/30 bg-dark-800/20 px-4 py-3">
           <p className="text-sm text-dark-300">{selectedTariff.description}</p>
         </div>
       )}
 
       {/* Promo group banner */}
       {config.promo_group_name && (
-        <div className="flex items-center gap-3 rounded-none border border-success-500/30 bg-success-500/10 p-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-success-500/30 bg-success-500/20">
+        <div className="flex items-center gap-3 rounded-xl border border-success-500/30 bg-success-500/10 p-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success-500/20">
             <SparklesIcon className="h-4 w-4 text-success-400" />
           </div>
           <div>
@@ -589,8 +596,8 @@ function BuyTabContent({
 
       {/* Active discount banner */}
       {config.active_discount_percent != null && config.active_discount_percent > 0 && (
-        <div className="flex items-center gap-3 rounded-none border border-warning-500/30 bg-warning-500/10 p-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-warning-500/30 bg-warning-500/20">
+        <div className="flex items-center gap-3 rounded-xl border border-warning-500/30 bg-warning-500/10 p-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-warning-500/20">
             <SparklesIcon className="h-4 w-4 text-warning-400" />
           </div>
           <div className="text-sm font-medium text-warning-400">
@@ -665,7 +672,7 @@ function BuyTabContent({
 
       {/* Summary / Balance info */}
       {paymentMode === 'balance' && (
-        <div className="rounded-none border border-dark-800/50 bg-dark-900/50 p-4">
+        <div className="rounded-2xl border border-dark-800/50 bg-dark-900/50 p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-dark-400">{t('gift.yourBalance')}</span>
             <span className="text-sm font-semibold text-dark-200">
@@ -682,7 +689,7 @@ function BuyTabContent({
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="rounded-none border border-warning-500/20 bg-warning-500/5 p-3"
+            className="rounded-xl border border-warning-500/20 bg-warning-500/5 p-3"
           >
             <p className="text-sm text-warning-400">
               {t('gift.insufficientBalance')}{' '}
@@ -704,7 +711,7 @@ function BuyTabContent({
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="rounded-none border border-error-500/20 bg-error-500/5 p-3"
+            className="rounded-xl border border-error-500/20 bg-error-500/5 p-3"
           >
             <p className="text-sm text-error-400">{submitError}</p>
           </motion.div>
@@ -717,14 +724,14 @@ function BuyTabContent({
         onClick={handleSubmit}
         disabled={!canSubmit || purchaseMutation.isPending}
         className={cn(
-          'flex w-full items-center justify-center gap-2 rounded-none px-6 py-4 text-base font-semibold transition-all duration-200',
+          'flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-semibold transition-all duration-200',
           canSubmit && !purchaseMutation.isPending
             ? 'bg-accent-500 text-on-accent shadow-lg shadow-accent-500/25 hover:bg-accent-400 hover:shadow-accent-500/40 active:scale-[0.98]'
             : 'cursor-not-allowed bg-dark-800 text-dark-500',
         )}
       >
         {purchaseMutation.isPending ? (
-          <div className="h-5 w-5 animate-spin border-2 border-white/30 border-t-white" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
         ) : (
           <>
             {t('gift.giftButton')} {currentPrice > 0 ? formatPrice(currentPrice) : ''}
@@ -745,6 +752,82 @@ function ActivateTabContent({ initialCode }: { initialCode?: string | null }) {
     if (initialCode) setCode(initialCode);
   }, [initialCode]);
   const [activateError, setActivateError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const scannerRef = useRef<Html5QrcodeInstance | null>(null);
+
+  const stopScan = useCallback(() => {
+    if (scannerRef.current) {
+      scannerRef.current
+        .stop()
+        .catch(() => undefined)
+        .finally(() => {
+          scannerRef.current?.clear();
+          scannerRef.current = null;
+        });
+    }
+    setScanning(false);
+  }, []);
+
+  // Веб-сканер держит камеру: гасим его при уходе с вкладки/размонтировании,
+  // иначе индикатор камеры остаётся гореть.
+  useEffect(() => stopScan, [stopScan]);
+
+  const applyScannedCode = useCallback(
+    (decoded: string) => {
+      const parsed = parseGiftCode(decoded);
+      if (!parsed) {
+        setActivateError(t('gift.scanNotRecognized'));
+        return;
+      }
+      setCode(parsed);
+      setActivateError(null);
+    },
+    [t],
+  );
+
+  const handleScan = useCallback(async () => {
+    setActivateError(null);
+
+    if (canUseTelegramScanner()) {
+      try {
+        const decoded = await scanWithTelegram(
+          t('gift.scanDescription'),
+          (v) => parseGiftCode(v) !== null,
+        );
+        if (decoded) applyScannedCode(decoded);
+      } catch {
+        setActivateError(t('gift.scanError'));
+      }
+      return;
+    }
+
+    const Html5Qrcode = await loadHtml5Qrcode();
+    if (!Html5Qrcode) {
+      setActivateError(t('gift.scanNoCamera'));
+      return;
+    }
+
+    setScanning(true);
+    const scanner = new Html5Qrcode('gift-qr-reader');
+    scannerRef.current = scanner;
+    const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+    const onDecoded = (decoded: string) => {
+      if (parseGiftCode(decoded) === null) return;
+      stopScan();
+      applyScannedCode(decoded);
+    };
+    try {
+      await scanner.start({ facingMode: 'environment' }, config, onDecoded, () => undefined);
+    } catch {
+      try {
+        await scanner.start({ facingMode: 'user' }, config, onDecoded, () => undefined);
+      } catch {
+        setActivateError(t('gift.scanNoCamera'));
+        scannerRef.current = null;
+        setScanning(false);
+      }
+    }
+  }, [applyScannedCode, stopScan, t]);
 
   const activateMutation = useMutation({
     mutationFn: (giftCode: string) => giftApi.activateGiftCode(giftCode),
@@ -774,7 +857,7 @@ function ActivateTabContent({ initialCode }: { initialCode?: string | null }) {
     const result = activateMutation.data;
     return (
       <div className="flex flex-col items-center gap-4 py-12 text-center">
-        <div className="flex h-16 w-16 items-center justify-center border border-accent-500/40 bg-accent-500/20">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-500/20">
           <CheckCircleIcon className="h-8 w-8 text-accent-400" />
         </div>
         <h2 className="text-xl font-bold text-dark-50">{t('gift.activateSuccess')}</h2>
@@ -792,7 +875,7 @@ function ActivateTabContent({ initialCode }: { initialCode?: string | null }) {
     <div className="flex flex-col items-center gap-6 py-8">
       {/* Icon + title */}
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex h-16 w-16 items-center justify-center border border-accent-500/40 bg-accent-500/20">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-500/20">
           <KeyIcon className="h-8 w-8 text-accent-400" />
         </div>
         <h2 className="text-xl font-bold text-dark-50">{t('gift.activateTitle')}</h2>
@@ -809,9 +892,35 @@ function ActivateTabContent({ initialCode }: { initialCode?: string | null }) {
             setActivateError(null);
           }}
           placeholder={t('gift.activateCodePlaceholder')}
-          className="w-full rounded-none border border-dark-700/50 bg-dark-800/50 px-6 py-4 text-center font-mono text-sm text-dark-50 placeholder-dark-500 outline-none transition-colors focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/25"
+          className="w-full rounded-2xl border border-dark-700/50 bg-dark-800/50 px-6 py-4 text-center font-mono text-sm text-dark-50 placeholder-dark-500 outline-none transition-colors focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/25"
           aria-label={t('gift.activateTitle')}
         />
+
+        {/* Скан QR: в Telegram — нативный сканер (в WebView камера через
+            getUserMedia работает ненадёжно), в вебе — html5-qrcode. */}
+        <button
+          type="button"
+          onClick={handleScan}
+          disabled={scanning}
+          className="mt-3 w-full rounded-2xl border border-dark-700/50 px-6 py-3 text-sm font-medium text-dark-200 transition-colors hover:bg-dark-800/50 disabled:opacity-50"
+        >
+          {scanning ? t('gift.scanInProgress') : t('gift.scanButton')}
+        </button>
+
+        {/* Контейнер веб-сканера: html5-qrcode рендерит превью камеры внутрь */}
+        <div
+          id="gift-qr-reader"
+          className={cn('mt-3 overflow-hidden rounded-2xl', !scanning && 'hidden')}
+        />
+        {scanning && (
+          <button
+            type="button"
+            onClick={stopScan}
+            className="mt-2 w-full rounded-2xl border border-dark-700/50 px-6 py-2 text-xs text-dark-400 transition-colors hover:bg-dark-800/50"
+          >
+            {t('gift.scanCancel')}
+          </button>
+        )}
       </div>
 
       {/* Error */}
@@ -821,7 +930,7 @@ function ActivateTabContent({ initialCode }: { initialCode?: string | null }) {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="w-full max-w-sm rounded-none border border-error-500/20 bg-error-500/5 p-3"
+            className="w-full max-w-sm rounded-xl border border-error-500/20 bg-error-500/5 p-3"
           >
             <p className="text-center text-sm text-error-400">{activateError}</p>
           </motion.div>
@@ -834,14 +943,14 @@ function ActivateTabContent({ initialCode }: { initialCode?: string | null }) {
         onClick={handleActivate}
         disabled={!code.trim() || activateMutation.isPending}
         className={cn(
-          'w-full max-w-sm rounded-none px-6 py-4 text-base font-semibold transition-all duration-200',
+          'w-full max-w-sm rounded-2xl px-6 py-4 text-base font-semibold transition-all duration-200',
           code.trim() && !activateMutation.isPending
             ? 'bg-accent-500 text-on-accent shadow-lg shadow-accent-500/25 hover:bg-accent-400 active:scale-[0.98]'
             : 'cursor-not-allowed bg-dark-800 text-dark-500',
         )}
       >
         {activateMutation.isPending ? (
-          <div className="mx-auto h-5 w-5 animate-spin border-2 border-white/30 border-t-white" />
+          <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
         ) : (
           t('gift.activateButton')
         )}
@@ -888,8 +997,11 @@ function SentGiftCard({ gift }: { gift: SentGift }) {
   const botUsername =
     widgetConfig?.bot_username || import.meta.env.VITE_TELEGRAM_BOT_USERNAME || '';
 
-  const shortCode = gift.token.slice(0, 12);
-  const giftCode = `GIFT-${shortCode}`;
+  const artifacts = buildGiftClaimArtifacts(gift, {
+    botUsername,
+    origin: window.location.origin,
+  });
+  const giftCode = artifacts.code;
   const isActivated = isGiftActivated(gift);
   const isAvailable = !isActivated && isGiftAvailable(gift.status);
 
@@ -903,17 +1015,15 @@ function SentGiftCard({ gift }: { gift: SentGift }) {
     // Literal "GIFT_" prefix: Telegram forwards the start param to the bot
     // verbatim (no URL-decoding), so the previously-encoded "%5F" never matched
     // the bot's `start_parameter.startswith('GIFT_')` handler.
-    const botLink = botUsername ? `https://t.me/${botUsername}?start=GIFT_${shortCode}` : null;
-    const cabinetLink = `${window.location.origin}/gift?tab=activate&code=${encodeURIComponent(shortCode)}`;
     return [
       t('gift.shareText'),
       '',
-      botLink ? `${t('gift.shareModalActivateVia')} ${botLink}` : null,
-      `${t('gift.shareModalActivateViaCabinet')} ${cabinetLink}`,
+      artifacts.botLink ? `${t('gift.shareModalActivateVia')} ${artifacts.botLink}` : null,
+      `${t('gift.shareModalActivateViaCabinet')} ${artifacts.cabinetLink}`,
     ]
       .filter(Boolean)
       .join('\n');
-  }, [shortCode, botUsername, t]);
+  }, [artifacts.botLink, artifacts.cabinetLink, t]);
 
   const handleShare = useCallback(async () => {
     const message = buildShareMessage();
@@ -924,13 +1034,13 @@ function SentGiftCard({ gift }: { gift: SentGift }) {
   const handleDismissToast = useCallback(() => setShowToast(false), []);
 
   return (
-    <div className="rounded-none border border-dark-800/50 bg-dark-900/50 p-4">
+    <div className="rounded-2xl border border-dark-800/50 bg-dark-900/50 p-4">
       {/* Header: tariff name + status badge */}
       <div className="mb-3 flex items-start justify-between">
         <h3 className="text-base font-bold text-dark-50">{gift.tariff_name ?? t('gift.tariff')}</h3>
         <span
           className={cn(
-            'rounded-none px-2.5 py-1 text-xs font-bold',
+            'rounded-lg px-2.5 py-1 text-xs font-bold',
             isActivated
               ? 'bg-dark-700 text-dark-400'
               : isAvailable
@@ -955,8 +1065,8 @@ function SentGiftCard({ gift }: { gift: SentGift }) {
       {!isActivated && (
         <>
           {/* Gift code display */}
-          <div className="mb-3 rounded-none bg-dark-800/80 px-4 py-4 text-center">
-            <p className="font-mono text-base font-bold tracking-[0.15em] text-accent-400">
+          <div className="mb-3 rounded-xl bg-dark-800/80 px-4 py-4 text-center">
+            <p className="break-all font-mono text-sm font-bold tracking-wider text-accent-400">
               {giftCode}
             </p>
           </div>
@@ -965,7 +1075,7 @@ function SentGiftCard({ gift }: { gift: SentGift }) {
           <button
             type="button"
             onClick={handleShare}
-            className="flex w-full items-center justify-center gap-2 rounded-none bg-accent-500 px-4 py-3 text-sm font-bold uppercase tracking-wider text-on-accent transition-colors hover:bg-accent-400 active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 px-4 py-3 text-sm font-bold uppercase tracking-wider text-on-accent transition-colors hover:bg-accent-400 active:scale-[0.98]"
           >
             <ExportIcon className="h-4 w-4" />
             {t('gift.shareGift')}
@@ -1005,11 +1115,11 @@ function ReceivedGiftCard({ gift }: { gift: ReceivedGift }) {
   const statusText = t(statusKey);
 
   return (
-    <div className="rounded-none border border-dark-800/50 bg-dark-900/50 p-4">
+    <div className="rounded-2xl border border-dark-800/50 bg-dark-900/50 p-4">
       {/* Header */}
       <div className="mb-3 flex items-start justify-between">
         <h3 className="text-base font-bold text-dark-50">{gift.tariff_name ?? t('gift.tariff')}</h3>
-        <span className="rounded-none bg-dark-700 px-2.5 py-1 text-xs font-bold text-dark-400">
+        <span className="rounded-lg bg-dark-700 px-2.5 py-1 text-xs font-bold text-dark-400">
           {statusText}
         </span>
       </div>
@@ -1032,7 +1142,7 @@ function ReceivedGiftCard({ gift }: { gift: ReceivedGift }) {
 
       {/* Gift message */}
       {gift.gift_message && (
-        <div className="mt-2 rounded-none bg-dark-800/50 p-3">
+        <div className="mt-2 rounded-xl bg-dark-800/50 p-3">
           <p className="text-xs italic text-dark-300">{gift.gift_message}</p>
         </div>
       )}
@@ -1082,9 +1192,9 @@ function MyGiftsTabContent() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="h-8 w-8 animate-spin border-2 border-dark-600 border-t-accent-500" />
-      </div>
+      <SkeletonGroup className="space-y-3">
+        <Skeleton variant="card" count={3} className="h-24" />
+      </SkeletonGroup>
     );
   }
 
@@ -1098,11 +1208,13 @@ function MyGiftsTabContent() {
 
   if (isEmpty) {
     return (
-      <EmptyState
-        icon={<InboxIcon className="h-8 w-8 text-dark-500" />}
-        title={t('gift.myGiftsEmpty')}
-        description={t('gift.myGiftsEmptyDesc')}
-      />
+      <div className="flex flex-col items-center gap-4 py-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-dark-800/50">
+          <InboxIcon className="h-8 w-8 text-dark-400" />
+        </div>
+        <h2 className="text-lg font-semibold text-dark-200">{t('gift.myGiftsEmpty')}</h2>
+        <p className="max-w-xs text-sm text-dark-400">{t('gift.myGiftsEmptyDesc')}</p>
+      </div>
     );
   }
 
@@ -1218,10 +1330,10 @@ export default function GiftSubscription() {
           transition={{ duration: 0.4 }}
           className="mb-6 flex items-center gap-3"
         >
-          <div className="flex h-10 w-10 items-center justify-center border border-accent-500/40 bg-accent-500/20">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-500/20">
             <GiftIcon className="h-5 w-5 text-accent-400" />
           </div>
-          <PageHeader title={t('gift.pageTitle')} className="flex-1" />
+          <h1 className="text-2xl font-bold text-dark-50">{t('gift.pageTitle')}</h1>
         </motion.div>
 
         {/* Tab bar */}
@@ -1229,7 +1341,7 @@ export default function GiftSubscription() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
-          className="mb-6 rounded-none bg-dark-800/50 p-1"
+          className="mb-6 rounded-2xl bg-dark-800/50 p-1"
         >
           <div className="flex" role="tablist" aria-label={t('gift.pageTitle')}>
             {tabs.map((tab) => (
@@ -1242,7 +1354,7 @@ export default function GiftSubscription() {
                 aria-controls={`tabpanel-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'flex-1 rounded-none px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  'flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   activeTab === tab.id
                     ? 'bg-accent-500 text-on-accent shadow-sm'
                     : 'text-dark-400 hover:text-dark-200',

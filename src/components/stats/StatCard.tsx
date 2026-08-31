@@ -1,6 +1,7 @@
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { TREND_STYLES } from './constants';
+import { Skeleton } from '../ui/skeleton';
 
 export interface StatCardDelta {
   /** Signed percent change vs the comparison period. */
@@ -10,16 +11,17 @@ export interface StatCardDelta {
 
 /** Soft tinted chip + matching value colour, in the spirit of the Remnawave stats. */
 const TONE = {
-  neutral: { chip: 'bg-dark-800 text-dark-300 border border-dark-600', value: 'text-dark-100' },
-  success: { chip: 'bg-success-500/10 text-success-400 border border-success-500/20', value: 'text-success-400' },
-  accent: { chip: 'bg-accent-500/10 text-accent-500 border border-accent-500/20', value: 'text-accent-500' },
-  warning: { chip: 'bg-warning-500/10 text-warning-400 border border-warning-500/20', value: 'text-warning-400' },
-  error: { chip: 'bg-error-500/10 text-error-400 border border-error-500/20', value: 'text-error-400' },
+  neutral: { chip: 'bg-dark-700/60 text-dark-300', value: 'text-dark-100' },
+  success: { chip: 'bg-success-500/15 text-success-400', value: 'text-success-400' },
+  accent: { chip: 'bg-accent-500/15 text-accent-400', value: 'text-accent-400' },
+  warning: { chip: 'bg-warning-500/15 text-warning-400', value: 'text-warning-400' },
+  error: { chip: 'bg-error-500/15 text-error-400', value: 'text-error-400' },
 } as const;
 
 interface StatCardProps {
-  label: string;
-  value: string | number;
+  /** Необязателен в режиме загрузки: тогда вместо подписи рисуется заглушка. */
+  label?: string;
+  value?: string | number;
   icon?: ReactNode;
   /** Tints the icon chip and (unless valueClassName is set) the value colour. */
   tone?: keyof typeof TONE;
@@ -50,31 +52,41 @@ export function StatCard({
   const trendStyle = delta ? (TREND_STYLES[delta.trend] ?? TREND_STYLES.stable) : null;
 
   return (
-    <div className="h-full border border-dark-300 bg-dark-900 p-3 shadow-[2px_2px_0_0_#000] hover:bg-dark-850 transition-colors">
-      <div className="flex items-center justify-between gap-2 border-b border-dark-800 pb-1.5 mb-2">
-        <span className="line-clamp-2 font-mono text-xs font-bold uppercase tracking-wider text-dark-400 sm:text-sm">{label}</span>
+    <div className="h-full rounded-xl bg-dark-800/30 p-3 transition-colors hover:bg-dark-800/50">
+      <div className="flex items-center justify-between gap-2">
+        {loading && !label ? (
+          // Карточка сама себе скелетон: страницам не нужно угадывать её высоту.
+          // Высота замерена по реальной подписи, а не выведена из шкалы:
+          // на мобиле leading-tight перебивает text-xs и даёт 15px, а на sm
+          // responsive-вариант text-sm перебивает leading-tight и даёт 20px.
+          <Skeleton className="h-[15px] w-24 sm:h-5" />
+        ) : (
+          <span className="line-clamp-2 text-xs leading-tight text-dark-500 sm:text-sm">
+            {label}
+          </span>
+        )}
         {trailing}
       </div>
       {/* Chip is centred against the value line only (delta sits below the whole
           row), so the icon lands in the same spot on every card. The forced svg
           size normalises every icon regardless of what the call site passes. */}
-      <div className="flex items-center gap-2.5">
+      <div className="mt-1.5 flex items-center gap-2.5">
         {icon && (
           <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-none [&>svg]:h-5 [&>svg]:w-5 ${toneStyle.chip}`}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg [&>svg]:h-5 [&>svg]:w-5 ${toneStyle.chip}`}
           >
             {icon}
           </span>
         )}
         <div className="min-w-0 flex-1">
           {loading ? (
-            <div className="skeleton h-7 w-20" />
+            <Skeleton className="h-7 w-20 rounded" />
           ) : (
             <>
-              <div className={`truncate font-mono text-lg font-black tracking-tighter sm:text-xl uppercase ${valueClass}`}>
+              <div className={`truncate text-lg font-semibold sm:text-xl ${valueClass}`}>
                 {value}
               </div>
-              {subValue && <div className="truncate font-mono text-xs text-dark-500 font-bold uppercase">{subValue}</div>}
+              {subValue && <div className="truncate text-xs text-dark-500">{subValue}</div>}
             </>
           )}
         </div>

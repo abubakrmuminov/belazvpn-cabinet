@@ -10,7 +10,7 @@ import { infoPagesApi } from '../api/infoPages';
 import { promoApi, type LoyaltyTierInfo } from '../api/promo';
 import type { FaqItem, ReplacesTab } from '../api/infoPages';
 import { DocumentIcon, InfoIcon, QuestionIcon, ShieldIcon, StarIcon } from '@/components/icons';
-import { PageHeader } from '@/components/common/PageHeader';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 
 const ChevronIcon = ({ expanded }: { expanded: boolean }) => (
   <PiCaretDown className={`h-5 w-5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
@@ -180,7 +180,7 @@ function ReplacementFaqItem({
   const sanitizedAnswer = useMemo(() => sanitizeRichHtml(item.a), [item.a]);
 
   return (
-    <div className="overflow-hidden rounded-none border border-dark-700 bg-dark-800/50 transition-all hover:border-dark-600">
+    <div className="overflow-hidden rounded-xl border border-dark-700 bg-dark-800/50 transition-all hover:border-dark-600">
       <button
         type="button"
         onClick={onToggle}
@@ -387,9 +387,9 @@ export default function Info() {
   const renderInfoPageContent = () => {
     if (infoPageLoading) {
       return (
-        <div className="flex justify-center py-8">
-          <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-        </div>
+        <SkeletonGroup className="space-y-3">
+          <Skeleton variant="card" count={3} className="h-16" />
+        </SkeletonGroup>
       );
     }
 
@@ -424,9 +424,9 @@ export default function Info() {
     // Show spinner while tab replacements are loading (prevents flash of wrong content)
     if (!replacementsLoaded) {
       return (
-        <div className="flex justify-center py-8">
-          <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-        </div>
+        <SkeletonGroup className="space-y-3">
+          <Skeleton variant="card" count={3} className="h-16" />
+        </SkeletonGroup>
       );
     }
 
@@ -438,9 +438,9 @@ export default function Info() {
     if (activeTab === 'faq') {
       if (faqLoading) {
         return (
-          <div className="flex justify-center py-8">
-            <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-          </div>
+          <SkeletonGroup className="space-y-3">
+            <Skeleton variant="card" count={3} className="h-16" />
+          </SkeletonGroup>
         );
       }
 
@@ -473,9 +473,9 @@ export default function Info() {
     if (activeTab === 'rules') {
       if (rulesLoading) {
         return (
-          <div className="flex justify-center py-8">
-            <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-          </div>
+          <SkeletonGroup className="space-y-3">
+            <Skeleton variant="card" count={3} className="h-16" />
+          </SkeletonGroup>
         );
       }
 
@@ -501,9 +501,9 @@ export default function Info() {
     if (activeTab === 'privacy') {
       if (privacyLoading) {
         return (
-          <div className="flex justify-center py-8">
-            <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-          </div>
+          <SkeletonGroup className="space-y-3">
+            <Skeleton variant="card" count={3} className="h-16" />
+          </SkeletonGroup>
         );
       }
 
@@ -529,9 +529,9 @@ export default function Info() {
     if (activeTab === 'offer') {
       if (offerLoading) {
         return (
-          <div className="flex justify-center py-8">
-            <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-          </div>
+          <SkeletonGroup className="space-y-3">
+            <Skeleton variant="card" count={3} className="h-16" />
+          </SkeletonGroup>
         );
       }
 
@@ -557,9 +557,9 @@ export default function Info() {
     if (activeTab === 'loyalty') {
       if (loyaltyLoading) {
         return (
-          <div className="flex justify-center py-8">
-            <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-          </div>
+          <SkeletonGroup className="space-y-3">
+            <Skeleton variant="card" count={3} className="h-16" />
+          </SkeletonGroup>
         );
       }
 
@@ -578,12 +578,24 @@ export default function Info() {
 
       const getStatusBadge = (tier: LoyaltyTierInfo) => {
         if (tier.is_current) {
-          return <span className="badge-info">{t('info.statusCurrent')}</span>;
+          return (
+            <span className="rounded-full bg-accent-500/20 px-2 py-1 text-xs font-medium text-accent-400">
+              {t('info.statusCurrent')}
+            </span>
+          );
         }
         if (tier.is_achieved) {
-          return <span className="badge-success">{t('info.statusAchieved')}</span>;
+          return (
+            <span className="rounded-full bg-success-500/20 px-2 py-1 text-xs font-medium text-success-400">
+              {t('info.statusAchieved')}
+            </span>
+          );
         }
-        return <span className="badge-neutral">{t('info.statusLocked')}</span>;
+        return (
+          <span className="rounded-full bg-dark-600 px-2 py-1 text-xs font-medium text-dark-400">
+            {t('info.statusLocked')}
+          </span>
+        );
       };
 
       const hasAnyDiscount = (tier: LoyaltyTierInfo) => {
@@ -602,13 +614,13 @@ export default function Info() {
             <h3 className="mb-4 text-lg font-semibold text-dark-50">{t('info.yourProgress')}</h3>
 
             <div className="mb-4 grid grid-cols-2 gap-4">
-              <div className="rounded-none bg-dark-800/50 p-3">
+              <div className="rounded-xl bg-dark-800/50 p-3">
                 <div className="mb-1 text-xs text-dark-400">{t('info.totalSpent')}</div>
                 <div className="truncate text-base font-bold text-dark-50 sm:text-lg">
                   {formatCurrency(loyaltyData.current_spent_rubles)}
                 </div>
               </div>
-              <div className="rounded-none bg-dark-800/50 p-3">
+              <div className="rounded-xl bg-dark-800/50 p-3">
                 <div className="mb-1 text-xs text-dark-400">{t('info.currentStatus')}</div>
                 <div className="truncate text-base font-bold text-accent-400 sm:text-lg">
                   {loyaltyData.current_tier_name || '-'}
@@ -666,7 +678,7 @@ export default function Info() {
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-none ${
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${
                         tier.is_current
                           ? 'bg-accent-500/20 text-accent-400'
                           : tier.is_achieved
@@ -688,28 +700,28 @@ export default function Info() {
 
                 {/* Discounts */}
                 {hasAnyDiscount(tier) ? (
-                  <div className="rounded-none bg-dark-800/50 p-3">
+                  <div className="rounded-xl bg-dark-800/50 p-3">
                     <div className="mb-2 text-xs text-dark-400">{t('info.discounts')}:</div>
                     <div className="flex flex-wrap gap-2">
                       {tier.server_discount_percent > 0 && (
-                        <span className="rounded-none bg-dark-700 px-2 py-1 text-xs text-dark-200">
+                        <span className="rounded-lg bg-dark-700 px-2 py-1 text-xs text-dark-200">
                           {t('info.serverDiscount')}: -{tier.server_discount_percent}%
                         </span>
                       )}
                       {tier.traffic_discount_percent > 0 && (
-                        <span className="rounded-none bg-dark-700 px-2 py-1 text-xs text-dark-200">
+                        <span className="rounded-lg bg-dark-700 px-2 py-1 text-xs text-dark-200">
                           {t('info.trafficDiscount')}: -{tier.traffic_discount_percent}%
                         </span>
                       )}
                       {tier.device_discount_percent > 0 && (
-                        <span className="rounded-none bg-dark-700 px-2 py-1 text-xs text-dark-200">
+                        <span className="rounded-lg bg-dark-700 px-2 py-1 text-xs text-dark-200">
                           {t('info.deviceDiscount')}: -{tier.device_discount_percent}%
                         </span>
                       )}
                       {Object.entries(tier.period_discounts).map(([days, percent]) => (
                         <span
                           key={days}
-                          className="rounded-none bg-dark-700 px-2 py-1 text-xs text-dark-200"
+                          className="rounded-lg bg-dark-700 px-2 py-1 text-xs text-dark-200"
                         >
                           {t('info.periodDiscount', { days })}: -{percent}%
                         </span>
@@ -731,14 +743,10 @@ export default function Info() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            <InfoIcon className="h-6 w-6" />
-            {t('info.title')}
-          </span>
-        }
-      />
+      <div className="flex items-center gap-3">
+        <InfoIcon className="h-6 w-6" />
+        <h1 className="text-2xl font-bold text-dark-50 sm:text-3xl">{t('info.title')}</h1>
+      </div>
 
       {/* Tabs */}
       <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-x-visible">
@@ -746,7 +754,7 @@ export default function Info() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex min-h-[44px] shrink-0 items-center gap-2 rounded-none px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex min-h-[44px] shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? 'bg-accent-500 text-on-accent'
                 : 'bg-dark-800 text-dark-300 hover:bg-dark-700'

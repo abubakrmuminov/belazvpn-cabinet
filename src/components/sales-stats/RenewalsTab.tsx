@@ -10,6 +10,7 @@ import { StatCard } from '../stats';
 import { TREND_STYLES } from '../stats/constants';
 
 import { SimpleAreaChart } from './SimpleAreaChart';
+import { StatsTabSkeleton } from './StatsTabSkeleton';
 
 interface RenewalsTabProps {
   params: SalesStatsParams;
@@ -27,13 +28,7 @@ export function RenewalsTab({ params }: RenewalsTabProps) {
   });
 
   if (isLoading) {
-    return (
-      <div className="animate-pulse space-y-4">
-        {Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className="h-24 rounded-none bg-dark-800/30" />
-        ))}
-      </div>
-    );
+    return <StatsTabSkeleton />;
   }
 
   if (isError || !data) {
@@ -75,7 +70,7 @@ export function RenewalsTab({ params }: RenewalsTabProps) {
           {t('admin.salesStats.renewals.comparison')}
         </h4>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-none bg-dark-800/30 p-3">
+          <div className="rounded-xl bg-dark-800/30 p-3">
             <div className="text-xs text-dark-500">
               {t('admin.salesStats.renewals.currentPeriod')}
             </div>
@@ -88,7 +83,7 @@ export function RenewalsTab({ params }: RenewalsTabProps) {
               </span>
             </div>
           </div>
-          <div className="rounded-none bg-dark-800/30 p-3">
+          <div className="rounded-xl bg-dark-800/30 p-3">
             <div className="text-xs text-dark-500">
               {t('admin.salesStats.renewals.previousPeriod')}
             </div>

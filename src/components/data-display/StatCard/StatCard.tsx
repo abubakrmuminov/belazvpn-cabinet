@@ -3,10 +3,12 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card, type CardProps } from '../Card';
 import { slideUp, slideUpTransition } from '@/components/motion/transitions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export interface StatCardProps extends Omit<CardProps, 'children'> {
-  label: string;
-  value: ReactNode;
+  /** Необязателен в режиме загрузки: тогда вместо подписи рисуется заглушка. */
+  label?: string;
+  value?: ReactNode;
   icon?: ReactNode;
   change?: {
     value: number;
@@ -38,14 +40,21 @@ export const StatCard = forwardRef<HTMLDivElement, StatCardProps>(
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
             {/* Label */}
-            <p className="truncate text-sm font-medium text-dark-400">{label}</p>
+            {loading && !label ? (
+              // Карточка сама себе скелетон: страницам не нужно угадывать её высоту.
+              <Skeleton className="h-5 w-24" />
+            ) : (
+              <p className="truncate text-sm font-medium text-dark-400">{label}</p>
+            )}
 
             {/* Value */}
             {loading ? (
-              <div className="mt-2 h-8 w-24 animate-pulse bg-dark-800" />
+              // Отступ и высота повторяют реальное значение (mt-1 + text-2xl,
+              // на sm — text-3xl), иначе карточка подпрыгивает при загрузке.
+              <Skeleton className="mt-1 h-8 w-24 sm:h-9" />
             ) : (
               <motion.p
-                className="mt-1 font-mono text-2xl font-black tracking-tight text-dark-100 sm:text-3xl"
+                className="mt-1 text-2xl font-bold text-dark-100 sm:text-3xl"
                 variants={slideUp}
                 initial="initial"
                 animate="animate"
@@ -70,7 +79,7 @@ export const StatCard = forwardRef<HTMLDivElement, StatCardProps>(
 
           {/* Icon */}
           {icon && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-dark-600 bg-dark-850 text-dark-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-linear bg-dark-800/80 text-dark-400">
               {icon}
             </div>
           )}

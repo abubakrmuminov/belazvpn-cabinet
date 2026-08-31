@@ -10,11 +10,13 @@ import { balanceApi } from '../api/balance';
 import { useCurrency } from '../hooks/useCurrency';
 import { API } from '../config/constants';
 import type { PaginatedResponse, Transaction } from '../types';
+
+import { Card } from '@/components/data-display/Card';
 import { Button } from '@/components/primitives/Button';
-import { PageHeader } from '@/components/common/PageHeader';
 import { ChevronDownIcon, ChevronRightIcon, CreditCardIcon, WalletIcon } from '@/components/icons';
 import { staggerContainer, staggerItem } from '@/components/motion/transitions';
 import { isPaidStatus, isFailedStatus } from '../utils/paymentStatus';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 
 export default function Balance() {
   const { t } = useTranslation();
@@ -26,11 +28,7 @@ export default function Balance() {
   const paymentHandledRef = useRef(false);
 
   // Fetch balance from API
-  const {
-    data: balanceData,
-    isLoading: balanceLoading,
-    refetch: refetchBalance,
-  } = useQuery({
+  const { data: balanceData, refetch: refetchBalance } = useQuery({
     queryKey: ['balance'],
     queryFn: balanceApi.getBalance,
     staleTime: API.BALANCE_STALE_TIME_MS,
@@ -206,35 +204,27 @@ export default function Balance() {
       animate="animate"
     >
       <motion.div variants={staggerItem}>
-        <PageHeader title={t('balance.title')} />
+        <h1 className="text-2xl font-bold text-dark-50 sm:text-3xl">{t('balance.title')}</h1>
       </motion.div>
 
-      {/* Balance Card */}
+      {/* Balance Card — flat surface; the giant numeric carries the
+          weight. The previous accent gradient + glow leaked accent into
+          decoration (DESIGN.md Tunable-but-Scarce Rule) and read as the
+          SaaS hero-metric template. */}
       <motion.div variants={staggerItem}>
-        <div className="border-2 border-accent-500 bg-dark-900 p-6 shadow-[4px_4px_0_0_#000]">
-          {/* Top accent stripe */}
-          <div className="mb-4 font-mono text-[10px] font-black uppercase tracking-[0.2em] text-dark-500">
-            {t('balance.currentBalance')}
+        <Card>
+          <div className="mb-2 text-sm text-dark-400">{t('balance.currentBalance')}</div>
+          <div className="text-4xl font-bold text-dark-50 sm:text-5xl">
+            {formatAmount(balanceData?.balance_rubles || 0)}
+            <span className="ml-2 text-2xl text-dark-400">{currencySymbol}</span>
           </div>
-          <div className="font-mono text-4xl font-black text-dark-50 sm:text-5xl">
-            {balanceLoading ? (
-              <div className="h-10 w-40 animate-pulse rounded bg-dark-800/50 sm:h-12" />
-            ) : (
-              <>
-                {formatAmount(balanceData?.balance_rubles || 0)}
-                <span className="ml-2 font-mono text-2xl font-bold text-dark-400">
-                  {currencySymbol}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
+        </Card>
       </motion.div>
 
       {/* Promo Code Section */}
       <motion.div variants={staggerItem}>
-        <div className="border border-dark-300 bg-dark-900 p-5 shadow-[3px_3px_0_0_#000]">
-          <h2 className="mb-4 border-b border-dark-300 pb-3 font-mono text-sm font-black uppercase tracking-widest text-dark-100">
+        <Card>
+          <h2 className="mb-4 text-lg font-semibold text-dark-100">
             {t('balance.promocode.title')}
           </h2>
           <div className="flex gap-3">
@@ -244,7 +234,7 @@ export default function Balance() {
               onChange={(e) => setPromocode(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handlePromocodeActivate()}
               placeholder={t('balance.promocode.placeholder')}
-              className="input flex-1 rounded-none font-mono text-sm uppercase tracking-wider"
+              className="input flex-1"
               disabled={promocodeLoading}
             />
             <Button
@@ -261,7 +251,7 @@ export default function Balance() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="mt-3 border-l-4 border-error-500 bg-error-500/10 p-3 font-mono text-xs font-bold uppercase tracking-wider text-error-400"
+                className="mt-3 rounded-linear border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-400"
               >
                 {promocodeError}
               </motion.div>
@@ -271,9 +261,9 @@ export default function Balance() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="mt-3 border-l-4 border-success-500 bg-success-500/10 p-3 font-mono text-xs font-bold uppercase tracking-wider text-success-400"
+                className="mt-3 rounded-linear border border-success-500/30 bg-success-500/10 p-3 text-sm text-success-400"
               >
-                <div>{promocodeSuccess.message}</div>
+                <div className="font-medium">{promocodeSuccess.message}</div>
                 {promocodeSuccess.amount > 0 && (
                   <div className="mt-1">
                     {t('balance.promocode.balanceAdded', {
@@ -288,9 +278,9 @@ export default function Balance() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-3 space-y-2 border border-accent-500/40 bg-accent-500/5 p-3"
+              className="mt-3 space-y-2 rounded-linear border border-accent-500/30 bg-accent-500/10 p-3"
             >
-              <div className="font-mono text-xs font-black uppercase tracking-wider text-dark-200">
+              <div className="text-sm font-medium text-dark-200">
                 {t('balance.promocode.selectSubscription', 'К какой подписке применить промокод?')}
               </div>
               {promoSelectSubs.map((sub) => (
@@ -298,7 +288,7 @@ export default function Balance() {
                   key={sub.id}
                   onClick={() => handlePromocodeActivate(sub.id)}
                   disabled={promocodeLoading}
-                  className="flex w-full min-w-0 items-center justify-between gap-3 border border-dark-300 bg-dark-800 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-dark-200 shadow-[2px_2px_0_0_#000] transition-colors hover:border-accent-500/50 hover:bg-dark-700 active:translate-y-[1px] active:shadow-[1px_1px_0_0_#000]"
+                  className="flex w-full min-w-0 items-center justify-between gap-3 rounded-linear border border-dark-600 bg-dark-700 px-3 py-2 text-sm text-dark-200 transition-colors hover:border-accent-500/50 hover:bg-dark-600"
                 >
                   <span className="truncate">{sub.tariff_name}</span>
                   <span className="shrink-0 text-dark-400">
@@ -311,20 +301,22 @@ export default function Balance() {
                   setPromoSelectSubs(null);
                   setPromoSelectCode(null);
                 }}
-                className="font-mono text-[10px] font-bold uppercase tracking-wider text-dark-400 hover:text-dark-200"
+                className="text-xs text-dark-400 hover:text-dark-200"
               >
                 {t('common.cancel', 'Отмена')}
               </button>
             </motion.div>
           )}
-        </div>
+        </Card>
       </motion.div>
 
-      {/* Payment Methods */}
+      {/* Payment Methods — self-animated: mounts after its query resolves, when
+          the parent stagger orchestration has already finished and would leave
+          it stuck at opacity 0 */}
       {paymentMethods && paymentMethods.length > 0 && (
         <motion.div variants={staggerItem} initial="initial" animate="animate">
-          <div className="border border-dark-300 bg-dark-900 p-5 shadow-[3px_3px_0_0_#000]">
-            <h2 className="mb-4 border-b border-dark-300 pb-3 font-mono text-sm font-black uppercase tracking-widest text-dark-100">
+          <Card>
+            <h2 className="mb-4 text-lg font-semibold text-dark-100">
               {t('balance.topUpBalance')}
             </h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -338,44 +330,40 @@ export default function Balance() {
                 });
 
                 return (
-                  <button
+                  <Card
                     key={method.id}
-                    disabled={!method.is_available}
+                    interactive={method.is_available}
+                    className={!method.is_available ? 'cursor-not-allowed opacity-50' : ''}
                     onClick={() => method.is_available && navigate(`/balance/top-up/${method.id}`)}
-                    className={`flex flex-col items-start border bg-dark-850 p-4 text-left shadow-[2px_2px_0_0_#000] transition-all active:translate-y-[1px] active:shadow-[1px_1px_0_0_#000] ${
-                      method.is_available
-                        ? 'border-dark-300 hover:border-accent-500/50 hover:bg-dark-800 cursor-pointer'
-                        : 'cursor-not-allowed border-dark-700 opacity-50'
-                    }`}
                   >
-                    <div className="font-mono text-sm font-black uppercase tracking-wider text-dark-100">
+                    <div className="font-semibold text-dark-100">
                       {method.name || translatedName}
                     </div>
                     {(method.description || translatedDesc) && (
-                      <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-dark-500">
+                      <div className="mt-1 text-sm text-dark-500">
                         {method.description || translatedDesc}
                       </div>
                     )}
-                    <div className="mt-3 font-mono text-[10px] font-bold uppercase tracking-wider text-dark-400">
-                      {formatAmount(method.min_amount_kopeks / 100, 0)} —{' '}
+                    <div className="mt-3 text-xs text-dark-400">
+                      {formatAmount(method.min_amount_kopeks / 100, 0)} {t('common.rangeTo', 'to')}{' '}
                       {formatAmount(method.max_amount_kopeks / 100, 0)} {currencySymbol}
                     </div>
-                  </button>
+                  </Card>
                 );
               })}
             </div>
-          </div>
+          </Card>
         </motion.div>
       )}
 
       {/* Transaction History */}
       <motion.div variants={staggerItem}>
-        <div className="border border-dark-300 bg-dark-900 shadow-[3px_3px_0_0_#000]">
+        <Card className="overflow-hidden">
           <button
             onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-            className="flex w-full items-center justify-between p-5 text-left"
+            className="flex w-full items-center justify-between text-left"
           >
-            <h2 className="font-mono text-sm font-black uppercase tracking-widest text-dark-100">
+            <h2 className="text-lg font-semibold text-dark-100">
               {t('balance.transactionHistory')}
             </h2>
             <ChevronDownIcon
@@ -392,14 +380,14 @@ export default function Balance() {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="border-t border-dark-300 p-5">
+                <div className="mt-4">
                   {isLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-                    </div>
+                    <SkeletonGroup className="space-y-3">
+                      <Skeleton variant="card" count={3} className="h-16" />
+                    </SkeletonGroup>
                   ) : transactions?.items && transactions.items.length > 0 ? (
                     <motion.div
-                      className="space-y-2"
+                      className="space-y-3"
                       variants={staggerContainer}
                       initial="initial"
                       animate="animate"
@@ -419,26 +407,22 @@ export default function Balance() {
                           <motion.div
                             key={tx.id}
                             variants={staggerItem}
-                            className="flex items-center justify-between border border-dark-300 bg-dark-850 p-4"
+                            className="flex items-center justify-between rounded-linear border border-dark-700/30 bg-dark-800/30 p-4"
                           >
                             <div className="flex-1">
                               <div className="mb-1 flex items-center gap-3">
-                                <span
-                                  className={`${getTypeBadge(tx.type)} rounded-none font-mono text-[9px] font-black uppercase tracking-widest`}
-                                >
+                                <span className={getTypeBadge(tx.type)}>
                                   {getTypeLabel(tx.type)}
                                 </span>
-                                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-dark-500">
+                                <span className="text-xs text-dark-500">
                                   {new Date(tx.created_at).toLocaleDateString(uiLocale())}
                                 </span>
                               </div>
                               {tx.description && (
-                                <div className="font-mono text-[11px] uppercase tracking-wide text-dark-400">
-                                  {tx.description}
-                                </div>
+                                <div className="text-sm text-dark-400">{tx.description}</div>
                               )}
                             </div>
-                            <div className={`font-mono text-base font-black ${colorClass}`}>
+                            <div className={`text-lg font-semibold ${colorClass}`}>
                               {sign}
                               {formatAmount(displayAmount)} {currencySymbol}
                             </div>
@@ -448,17 +432,15 @@ export default function Balance() {
                     </motion.div>
                   ) : (
                     <div className="py-12 text-center">
-                      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center border border-dark-300 bg-dark-800">
+                      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-linear-lg bg-dark-800">
                         <WalletIcon className="h-8 w-8 text-dark-500" />
                       </div>
-                      <div className="font-mono text-xs font-bold uppercase tracking-wider text-dark-400">
-                        {t('balance.noTransactions')}
-                      </div>
+                      <div className="text-dark-400">{t('balance.noTransactions')}</div>
                     </div>
                   )}
 
                   {transactions && transactions.pages > 1 && (
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-dark-500">
                       <Button
                         variant="secondary"
                         size="sm"
@@ -468,7 +450,7 @@ export default function Balance() {
                       >
                         {t('common.back')}
                       </Button>
-                      <div className="flex-1 text-center font-mono text-xs font-bold uppercase tracking-wider text-dark-500">
+                      <div className="flex-1 text-center">
                         {t('balance.page', {
                           current: transactions.page,
                           total: transactions.pages,
@@ -493,24 +475,22 @@ export default function Balance() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </Card>
       </motion.div>
 
-      {/* Saved Cards Navigation */}
+      {/* Saved Cards Navigation — self-animated: mounts after its query resolves
+          (see Payment Methods above) */}
       {savedCardsData?.recurrent_enabled && (
         <motion.div variants={staggerItem} initial="initial" animate="animate">
-          <button
-            onClick={() => navigate('/balance/saved-cards')}
-            className="flex w-full items-center justify-between border border-dark-300 bg-dark-900 p-5 shadow-[2px_2px_0_0_#000] transition-all hover:border-accent-500/50 hover:bg-dark-850 active:translate-y-[1px] active:shadow-[1px_1px_0_0_#000]"
-          >
-            <div className="flex items-center gap-3">
-              <CreditCardIcon className="h-5 w-5 text-dark-400" />
-              <span className="font-mono text-sm font-black uppercase tracking-wider text-dark-100">
-                {t('balance.savedCards.title')}
-              </span>
+          <Card interactive onClick={() => navigate('/balance/saved-cards')}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CreditCardIcon className="h-5 w-5 text-dark-400" />
+                <span className="font-medium text-dark-100">{t('balance.savedCards.title')}</span>
+              </div>
+              <ChevronRightIcon className="h-5 w-5 text-dark-400" />
             </div>
-            <ChevronRightIcon className="h-5 w-5 text-dark-400" />
-          </button>
+          </Card>
         </motion.div>
       )}
     </motion.div>

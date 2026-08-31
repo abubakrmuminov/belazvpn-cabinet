@@ -8,6 +8,7 @@ import { BackIcon, SearchIcon } from '@/components/icons';
 import { infoPagesApi } from '../api/infoPages';
 import { usePlatform } from '../platform/hooks/usePlatform';
 import type { FaqItem } from '../api/infoPages';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 
 /**
  * Sanitization config — same strict allowlist as NewsArticlePage.
@@ -196,7 +197,7 @@ function FaqAccordionItem({
   const sanitizedAnswer = useMemo(() => sanitizeHtml(item.a), [item.a]);
 
   return (
-    <div className="overflow-hidden rounded-none border border-dark-700 bg-dark-800/50 transition-all hover:border-dark-600">
+    <div className="overflow-hidden rounded-xl border border-dark-700 bg-dark-800/50 transition-all hover:border-dark-600">
       <button
         type="button"
         onClick={onToggle}
@@ -259,7 +260,7 @@ function FaqView({ items }: { items: FaqItem[] }) {
 
       {/* Accordion items */}
       {filteredItems.length === 0 ? (
-        <div className="rounded-none border border-dark-700 bg-dark-800/50 p-6 text-center text-sm text-dark-400">
+        <div className="rounded-xl border border-dark-700 bg-dark-800/50 p-6 text-center text-sm text-dark-400">
           {search ? t('admin.infoPages.faq.noResults') : t('admin.infoPages.faq.noQuestions')}
         </div>
       ) : (
@@ -342,16 +343,16 @@ export default function InfoPageView() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="skeleton h-8 w-32 rounded-none" />
-        <div className="skeleton h-10 w-3/4 rounded-none" />
-        <div className="skeleton h-64 w-full rounded-none" />
+      <SkeletonGroup className="space-y-6">
+        <Skeleton className="h-8 w-32 rounded-lg" />
+        <Skeleton className="h-10 w-3/4 rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-xl" />
         <div className="space-y-3">
-          <div className="skeleton h-4 w-full rounded" />
-          <div className="skeleton h-4 w-5/6 rounded" />
-          <div className="skeleton h-4 w-4/6 rounded" />
+          <Skeleton className="h-4 w-full rounded" />
+          <Skeleton className="h-4 w-5/6 rounded" />
+          <Skeleton className="h-4 w-4/6 rounded" />
         </div>
-      </div>
+      </SkeletonGroup>
     );
   }
 
@@ -361,13 +362,13 @@ export default function InfoPageView() {
         {!capabilities.hasBackButton && (
           <button
             onClick={() => navigate('/info')}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-none border border-dark-700 bg-dark-800 transition-colors hover:border-dark-600"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-dark-700 bg-dark-800 transition-colors hover:border-dark-600"
             aria-label={t('common.back')}
           >
             <BackIcon />
           </button>
         )}
-        <div className="rounded-none border border-dark-700 bg-dark-800/50 p-8 text-center text-dark-400">
+        <div className="rounded-xl border border-dark-700 bg-dark-800/50 p-8 text-center text-dark-400">
           {t('admin.infoPages.notFound')}
         </div>
       </div>
@@ -380,7 +381,7 @@ export default function InfoPageView() {
       {!capabilities.hasBackButton && (
         <button
           onClick={() => navigate(-1)}
-          className="flex min-h-[44px] items-center gap-2 rounded-none border border-dark-700 bg-dark-800 px-4 text-sm text-dark-400 transition-colors hover:border-dark-600 hover:text-dark-200"
+          className="flex min-h-[44px] items-center gap-2 rounded-xl border border-dark-700 bg-dark-800 px-4 text-sm text-dark-400 transition-colors hover:border-dark-600 hover:text-dark-200"
           aria-label={t('common.back')}
         >
           <BackIcon />

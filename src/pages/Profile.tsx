@@ -19,11 +19,12 @@ import {
 import { referralApi } from '../api/referral';
 import { brandingApi, type EmailAuthEnabled } from '../api/branding';
 import { UI } from '../config/constants';
+import { Card } from '@/components/data-display/Card';
 import { Button } from '@/components/primitives/Button';
 import { Switch } from '@/components/primitives/Switch';
-import { PageHeader } from '@/components/common/PageHeader';
 import { staggerContainer, staggerItem } from '@/components/motion/transitions';
 import { CopyIcon, CheckIcon, ShareIcon, ArrowRightIcon, PencilIcon } from '@/components/icons';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 
 export default function Profile() {
   const { t } = useTranslation();
@@ -279,94 +280,72 @@ export default function Profile() {
       animate="animate"
     >
       <motion.div variants={staggerItem}>
-        <PageHeader title={t('profile.title')} />
+        <h1 className="text-2xl font-bold text-dark-50 sm:text-3xl">{t('profile.title')}</h1>
       </motion.div>
 
       {/* User Info Card */}
       <motion.div variants={staggerItem}>
-        <div className="border border-dark-300 bg-dark-900 p-5 shadow-[3px_3px_0_0_#000]">
-          <h2 className="mb-4 border-b border-dark-300 pb-3 font-mono text-sm font-black uppercase tracking-widest text-dark-100">
-            {t('profile.accountInfo')}
-          </h2>
-          <div className="space-y-0 divide-y divide-dark-300">
-            <div className="flex items-center justify-between py-3">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-dark-500">
-                {t('profile.telegramId')}
-              </span>
-              <span className="font-mono text-sm font-black text-dark-100">
-                {user?.telegram_id}
-              </span>
+        <Card>
+          <h2 className="mb-6 text-lg font-semibold text-dark-100">{t('profile.accountInfo')}</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-dark-800/50 py-3">
+              <span className="text-dark-400">{t('profile.telegramId')}</span>
+              <span className="font-medium text-dark-100">{user?.telegram_id}</span>
             </div>
             {user?.username && (
-              <div className="flex items-center justify-between py-3">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-dark-500">
-                  {t('profile.username')}
-                </span>
-                <span className="font-mono text-sm font-black text-dark-100">@{user.username}</span>
+              <div className="flex items-center justify-between border-b border-dark-800/50 py-3">
+                <span className="text-dark-400">{t('profile.username')}</span>
+                <span className="font-medium text-dark-100">@{user.username}</span>
               </div>
             )}
-            <div className="flex items-center justify-between py-3">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-dark-500">
-                {t('profile.name')}
-              </span>
-              <span className="font-mono text-sm font-black text-dark-100">
-                {displayName(user)}
-              </span>
+            <div className="flex items-center justify-between border-b border-dark-800/50 py-3">
+              <span className="text-dark-400">{t('profile.name')}</span>
+              <span className="font-medium text-dark-100">{displayName(user)}</span>
             </div>
             <div className="flex items-center justify-between py-3">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-dark-500">
-                {t('profile.registeredAt')}
-              </span>
-              <span className="font-mono text-sm font-black text-dark-100">
+              <span className="text-dark-400">{t('profile.registeredAt')}</span>
+              <span className="font-medium text-dark-100">
                 {user?.created_at ? new Date(user.created_at).toLocaleDateString(uiLocale()) : '-'}
               </span>
             </div>
           </div>
-        </div>
+        </Card>
       </motion.div>
 
       {/* Connected Accounts Link */}
       <motion.div variants={staggerItem}>
-        <button
-          onClick={() => navigate('/profile/accounts')}
-          className="flex w-full items-center justify-between border border-dark-300 bg-dark-900 p-5 shadow-[2px_2px_0_0_#000] transition-all hover:border-accent-500/50 hover:bg-dark-850 active:translate-y-[1px] active:shadow-[1px_1px_0_0_#000]"
-        >
-          <div>
-            <h2 className="font-mono text-sm font-black uppercase tracking-widest text-dark-100">
-              {t('profile.accounts.goToAccounts')}
-            </h2>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-dark-400">
-              {t('profile.accounts.subtitle')}
-            </p>
+        <Card interactive onClick={() => navigate('/profile/accounts')}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-dark-100">
+                {t('profile.accounts.goToAccounts')}
+              </h2>
+              <p className="text-sm text-dark-400">{t('profile.accounts.subtitle')}</p>
+            </div>
+            <ArrowRightIcon className="h-5 w-5 text-dark-400" />
           </div>
-          <ArrowRightIcon className="h-5 w-5 text-dark-400" />
-        </button>
+        </Card>
       </motion.div>
 
-      {/* Referral Link Widget */}
+      {/* Referral Link Widget — self-animated: mounts after the referral queries
+          resolve, when the parent stagger orchestration has already finished and
+          would leave it stuck at opacity 0 */}
       {referralTerms?.is_enabled && referralLink && (
         <motion.div variants={staggerItem} initial="initial" animate="animate">
-          <div className="border border-dark-300 bg-dark-900 p-5 shadow-[3px_3px_0_0_#000]">
-            <div className="mb-4 flex items-center justify-between border-b border-dark-300 pb-3">
-              <h2 className="font-mono text-sm font-black uppercase tracking-widest text-dark-100">
-                {t('referral.yourLink')}
-              </h2>
+          <Card>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-dark-100">{t('referral.yourLink')}</h2>
               <Link
                 to="/referral"
-                className="flex items-center gap-1 font-mono text-[10px] font-black uppercase tracking-widest text-accent-400 transition-colors hover:text-accent-300"
+                className="flex items-center gap-1 text-accent-400 transition-colors hover:text-accent-300"
               >
-                <span>{t('referral.title')}</span>
+                <span className="text-sm">{t('referral.title')}</span>
                 <ArrowRightIcon className="h-4 w-4" />
               </Link>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <div className="flex-1">
-                <input
-                  type="text"
-                  readOnly
-                  value={referralLink}
-                  className="input w-full rounded-none font-mono text-xs uppercase tracking-wider"
-                />
+                <input type="text" readOnly value={referralLink} className="input w-full text-sm" />
               </div>
               <div className="flex gap-2">
                 <Button
@@ -385,44 +364,36 @@ export default function Profile() {
                 </Button>
               </div>
             </div>
-            <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-dark-500">
+            <p className="mt-3 text-sm text-dark-500">
               {t('referral.shareHint', { percent: referralInfo?.commission_percent || 0 })}
             </p>
-          </div>
+          </Card>
         </motion.div>
       )}
 
-      {/* Email Section */}
+      {/* Email Section - only show when email auth is enabled */}
       {isEmailAuthEnabled && (
         <motion.div variants={staggerItem}>
-          <div className="border border-dark-300 bg-dark-900 p-5 shadow-[3px_3px_0_0_#000]">
-            <h2 className="mb-4 border-b border-dark-300 pb-3 font-mono text-sm font-black uppercase tracking-widest text-dark-100">
-              {t('profile.emailAuth')}
-            </h2>
+          <Card>
+            <h2 className="mb-6 text-lg font-semibold text-dark-100">{t('profile.emailAuth')}</h2>
 
             {user?.email ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-dark-300 py-3">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-dark-500">
-                    Email
-                  </span>
+                <div className="flex items-center justify-between border-b border-dark-800/50 py-3">
+                  <span className="text-dark-400">Email</span>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm font-black text-dark-100">{user.email}</span>
+                    <span className="font-medium text-dark-100">{user.email}</span>
                     {user.email_verified ? (
-                      <span className="badge-success rounded-none font-mono text-[9px] font-black uppercase tracking-widest">
-                        {t('profile.verified')}
-                      </span>
+                      <span className="badge-success">{t('profile.verified')}</span>
                     ) : isEmailVerificationEnabled ? (
-                      <span className="badge-warning rounded-none font-mono text-[9px] font-black uppercase tracking-widest">
-                        {t('profile.notVerified')}
-                      </span>
+                      <span className="badge-warning">{t('profile.notVerified')}</span>
                     ) : null}
                   </div>
                 </div>
 
                 {!user.email_verified && isEmailVerificationEnabled && (
-                  <div className="border-l-4 border-warning-500 bg-warning-500/10 p-4">
-                    <p className="mb-4 font-mono text-xs font-bold uppercase tracking-wider text-warning-400">
+                  <div className="rounded-linear border border-warning-500/30 bg-warning-500/10 p-4">
+                    <p className="mb-4 text-sm text-warning-400">
                       {t('profile.verificationRequired')}
                     </p>
                     <div className="flex items-center gap-3">
@@ -437,7 +408,7 @@ export default function Profile() {
                       </Button>
                       <button
                         onClick={() => setChangeEmailStep('email')}
-                        className="font-mono text-xs font-bold uppercase tracking-wider text-accent-400 transition-colors hover:text-accent-300"
+                        className="text-sm text-accent-400 transition-colors hover:text-accent-300"
                       >
                         {t('profile.changeEmail.button')}
                       </button>
@@ -447,12 +418,10 @@ export default function Profile() {
 
                 {user.email_verified && (
                   <div className="flex items-center justify-between">
-                    <p className="font-mono text-xs uppercase tracking-wide text-dark-400">
-                      {t('profile.canLoginWithEmail')}
-                    </p>
+                    <p className="text-sm text-dark-400">{t('profile.canLoginWithEmail')}</p>
                     <button
                       onClick={() => setChangeEmailStep('email')}
-                      className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-accent-400 transition-colors hover:text-accent-300"
+                      className="flex items-center gap-2 text-sm text-accent-400 transition-colors hover:text-accent-300"
                     >
                       <PencilIcon />
                       <span>{t('profile.changeEmail.button')}</span>
@@ -470,8 +439,8 @@ export default function Profile() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="space-y-3 border-t border-dark-300 pt-4">
-                        <label className="block font-mono text-[10px] font-black uppercase tracking-widest text-dark-400">
+                      <div className="space-y-3 border-t border-dark-800/50 pt-4">
+                        <label className="block text-sm font-medium text-dark-400">
                           {t('profile.changeEmail.newEmail')}
                         </label>
                         <input
@@ -486,14 +455,10 @@ export default function Profile() {
                             }
                           }}
                           placeholder="new@email.com"
-                          className="input w-full rounded-none font-mono"
+                          className="input w-full"
                           autoComplete="email"
                         />
-                        {changeError && (
-                          <p className="font-mono text-xs font-bold text-error-400">
-                            {changeError}
-                          </p>
-                        )}
+                        {changeError && <p className="text-sm text-error-400">{changeError}</p>}
                         <div className="flex items-center gap-3">
                           <Button
                             onClick={handleSendChangeCode}
@@ -504,7 +469,7 @@ export default function Profile() {
                           </Button>
                           <button
                             onClick={resetChangeEmail}
-                            className="font-mono text-xs font-bold uppercase tracking-wider text-dark-400 hover:text-dark-200"
+                            className="text-sm text-dark-400 hover:text-dark-200"
                           >
                             {t('common.cancel')}
                           </button>
@@ -521,13 +486,13 @@ export default function Profile() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="space-y-3 border-t border-dark-300 pt-4">
-                        <div className="border-l-4 border-accent-500 bg-accent-500/10 p-3">
-                          <p className="font-mono text-xs font-bold uppercase tracking-wider text-accent-400">
+                      <div className="space-y-3 border-t border-dark-800/50 pt-4">
+                        <div className="rounded-linear border border-accent-500/30 bg-accent-500/10 p-3">
+                          <p className="text-sm text-accent-400">
                             {t('profile.changeEmail.codeSentTo', { email: newEmail })}
                           </p>
                         </div>
-                        <label className="block font-mono text-[10px] font-black uppercase tracking-widest text-dark-400">
+                        <label className="block text-sm font-medium text-dark-400">
                           {t('profile.changeEmail.verificationCode')}
                         </label>
                         <input
@@ -544,14 +509,10 @@ export default function Profile() {
                           }}
                           placeholder="000000"
                           maxLength={6}
-                          className="input w-full rounded-none text-center font-mono text-2xl tracking-[0.5em]"
+                          className="input w-full text-center text-2xl tracking-[0.5em]"
                           autoComplete="one-time-code"
                         />
-                        {changeError && (
-                          <p className="font-mono text-xs font-bold text-error-400">
-                            {changeError}
-                          </p>
-                        )}
+                        {changeError && <p className="text-sm text-error-400">{changeError}</p>}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <Button
@@ -567,7 +528,7 @@ export default function Profile() {
                                 setChangeCode('');
                                 setChangeError(null);
                               }}
-                              className="font-mono text-xs font-bold uppercase tracking-wider text-dark-400 hover:text-dark-200"
+                              className="text-sm text-dark-400 hover:text-dark-200"
                             >
                               {t('common.back')}
                             </button>
@@ -575,7 +536,7 @@ export default function Profile() {
                           <button
                             onClick={handleResendChangeCode}
                             disabled={resendCooldown > 0 || requestEmailChangeMutation.isPending}
-                            className={`font-mono text-xs font-bold uppercase tracking-wider ${resendCooldown > 0 ? 'text-dark-500' : 'text-accent-400 hover:text-accent-300'}`}
+                            className={`text-sm ${resendCooldown > 0 ? 'text-dark-500' : 'text-accent-400 hover:text-accent-300'}`}
                           >
                             {resendCooldown > 0
                               ? t('profile.changeEmail.resendIn', { seconds: resendCooldown })
@@ -594,16 +555,14 @@ export default function Profile() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="border-t border-dark-300 pt-4">
-                        <div className="flex items-center gap-3 border-l-4 border-success-500 bg-success-500/10 p-4">
+                      <div className="border-t border-dark-800/50 pt-4">
+                        <div className="flex items-center gap-3 rounded-linear border border-success-500/30 bg-success-500/10 p-4">
                           <CheckIcon />
                           <div>
-                            <p className="font-mono text-xs font-black uppercase tracking-wider text-success-400">
+                            <p className="font-medium text-success-400">
                               {t('profile.changeEmail.success')}
                             </p>
-                            <p className="font-mono text-[10px] uppercase tracking-wide text-dark-400">
-                              {newEmail}
-                            </p>
+                            <p className="text-sm text-dark-400">{newEmail}</p>
                           </div>
                         </div>
                       </div>
@@ -613,9 +572,7 @@ export default function Profile() {
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="font-mono text-xs uppercase tracking-wide text-dark-400">
-                  {t('profile.linkEmailDescription')}
-                </p>
+                <p className="text-sm text-dark-400">{t('profile.linkEmailDescription')}</p>
                 <Button variant="primary" onClick={() => navigate('/profile/accounts')}>
                   {t('profile.linkEmail')}
                 </Button>
@@ -625,42 +582,42 @@ export default function Profile() {
             {(error || success) && user?.email && (
               <div className="mt-4">
                 {error && (
-                  <div className="border-l-4 border-error-500 bg-error-500/10 p-4 font-mono text-xs font-bold uppercase tracking-wider text-error-400">
+                  <div className="rounded-linear border border-error-500/30 bg-error-500/10 p-4 text-sm text-error-400">
                     {error}
                   </div>
                 )}
                 {success && (
-                  <div className="border-l-4 border-success-500 bg-success-500/10 p-4 font-mono text-xs font-bold uppercase tracking-wider text-success-400">
+                  <div className="rounded-linear border border-success-500/30 bg-success-500/10 p-4 text-sm text-success-400">
                     {success}
                   </div>
                 )}
               </div>
             )}
-          </div>
+          </Card>
         </motion.div>
       )}
 
       {/* Notification Settings */}
       <motion.div variants={staggerItem}>
-        <div className="border border-dark-300 bg-dark-900 p-5 shadow-[3px_3px_0_0_#000]">
-          <h2 className="mb-4 border-b border-dark-300 pb-3 font-mono text-sm font-black uppercase tracking-widest text-dark-100">
+        <Card>
+          <h2 className="mb-6 text-lg font-semibold text-dark-100">
             {t('profile.notifications.title')}
           </h2>
 
           {notificationsLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="h-6 w-6 animate-spin border-2 border-accent-500 border-t-transparent" />
-            </div>
+            <SkeletonGroup className="space-y-3">
+              <Skeleton variant="card" count={3} className="h-16" />
+            </SkeletonGroup>
           ) : notificationSettings ? (
-            <div className="space-y-0 divide-y divide-dark-300">
+            <div className="space-y-6">
               {/* Subscription Expiry */}
-              <div className="space-y-3 py-4">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-mono text-xs font-black uppercase tracking-widest text-dark-100">
+                    <p className="font-medium text-dark-100">
                       {t('profile.notifications.subscriptionExpiry')}
                     </p>
-                    <p className="font-mono text-[10px] uppercase tracking-wide text-dark-400">
+                    <p className="text-sm text-dark-400">
                       {t('profile.notifications.subscriptionExpiryDesc')}
                     </p>
                   </div>
@@ -673,7 +630,7 @@ export default function Profile() {
                 </div>
                 {notificationSettings.subscription_expiry_enabled && (
                   <div className="flex items-center gap-3 pl-4">
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-dark-400">
+                    <span className="text-sm text-dark-400">
                       {t('profile.notifications.daysBeforeExpiry')}
                     </span>
                     <select
@@ -681,7 +638,7 @@ export default function Profile() {
                       onChange={(e) =>
                         handleNotificationValue('subscription_expiry_days', Number(e.target.value))
                       }
-                      className="input w-20 rounded-none py-1 font-mono text-xs"
+                      className="input w-20 py-1"
                     >
                       {[1, 2, 3, 5, 7, 14].map((d) => (
                         <option key={d} value={d}>
@@ -694,13 +651,13 @@ export default function Profile() {
               </div>
 
               {/* Traffic Warning */}
-              <div className="space-y-3 py-4">
+              <div className="space-y-3 border-t border-dark-800/50 pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-mono text-xs font-black uppercase tracking-widest text-dark-100">
+                    <p className="font-medium text-dark-100">
                       {t('profile.notifications.trafficWarning')}
                     </p>
-                    <p className="font-mono text-[10px] uppercase tracking-wide text-dark-400">
+                    <p className="text-sm text-dark-400">
                       {t('profile.notifications.trafficWarningDesc')}
                     </p>
                   </div>
@@ -713,7 +670,7 @@ export default function Profile() {
                 </div>
                 {notificationSettings.traffic_warning_enabled && (
                   <div className="flex items-center gap-3 pl-4">
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-dark-400">
+                    <span className="text-sm text-dark-400">
                       {t('profile.notifications.atPercent')}
                     </span>
                     <select
@@ -721,7 +678,7 @@ export default function Profile() {
                       onChange={(e) =>
                         handleNotificationValue('traffic_warning_percent', Number(e.target.value))
                       }
-                      className="input w-20 rounded-none py-1 font-mono text-xs"
+                      className="input w-20 py-1"
                     >
                       {[50, 70, 80, 90, 95].map((p) => (
                         <option key={p} value={p}>
@@ -734,13 +691,13 @@ export default function Profile() {
               </div>
 
               {/* Balance Low */}
-              <div className="space-y-3 py-4">
+              <div className="space-y-3 border-t border-dark-800/50 pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-mono text-xs font-black uppercase tracking-widest text-dark-100">
+                    <p className="font-medium text-dark-100">
                       {t('profile.notifications.balanceLow')}
                     </p>
-                    <p className="font-mono text-[10px] uppercase tracking-wide text-dark-400">
+                    <p className="text-sm text-dark-400">
                       {t('profile.notifications.balanceLowDesc')}
                     </p>
                   </div>
@@ -753,7 +710,7 @@ export default function Profile() {
                 </div>
                 {notificationSettings.balance_low_enabled && (
                   <div className="flex items-center gap-3 pl-4">
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-dark-400">
+                    <span className="text-sm text-dark-400">
                       {t('profile.notifications.threshold')}
                     </span>
                     <input
@@ -763,21 +720,17 @@ export default function Profile() {
                         handleNotificationValue('balance_low_threshold', Number(e.target.value))
                       }
                       min={0}
-                      className="input w-24 rounded-none py-1 font-mono text-xs"
+                      className="input w-24 py-1"
                     />
                   </div>
                 )}
               </div>
 
               {/* News */}
-              <div className="flex items-center justify-between py-4">
+              <div className="flex items-center justify-between border-t border-dark-800/50 pt-6">
                 <div>
-                  <p className="font-mono text-xs font-black uppercase tracking-widest text-dark-100">
-                    {t('profile.notifications.news')}
-                  </p>
-                  <p className="font-mono text-[10px] uppercase tracking-wide text-dark-400">
-                    {t('profile.notifications.newsDesc')}
-                  </p>
+                  <p className="font-medium text-dark-100">{t('profile.notifications.news')}</p>
+                  <p className="text-sm text-dark-400">{t('profile.notifications.newsDesc')}</p>
                 </div>
                 <Switch
                   checked={notificationSettings.news_enabled}
@@ -786,12 +739,12 @@ export default function Profile() {
               </div>
 
               {/* Promo Offers */}
-              <div className="flex items-center justify-between py-4">
+              <div className="flex items-center justify-between border-t border-dark-800/50 pt-6">
                 <div>
-                  <p className="font-mono text-xs font-black uppercase tracking-widest text-dark-100">
+                  <p className="font-medium text-dark-100">
                     {t('profile.notifications.promoOffers')}
                   </p>
-                  <p className="font-mono text-[10px] uppercase tracking-wide text-dark-400">
+                  <p className="text-sm text-dark-400">
                     {t('profile.notifications.promoOffersDesc')}
                   </p>
                 </div>
@@ -804,11 +757,9 @@ export default function Profile() {
               </div>
             </div>
           ) : (
-            <p className="font-mono text-xs uppercase tracking-wide text-dark-400">
-              {t('profile.notifications.unavailable')}
-            </p>
+            <p className="text-dark-400">{t('profile.notifications.unavailable')}</p>
           )}
-        </div>
+        </Card>
       </motion.div>
     </motion.div>
   );

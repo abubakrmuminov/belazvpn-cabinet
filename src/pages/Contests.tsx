@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { contestsApi, type ContestInfo, type ContestGameData } from '../api/contests';
 import { GamepadIcon, TrophyIcon, XIcon } from '@/components/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { EmptyState } from '@/components/common/EmptyState';
+import { PageSkeleton, Skeleton } from '@/components/ui/skeleton';
 
 export default function Contests() {
   const { t } = useTranslation();
@@ -58,9 +57,9 @@ export default function Contests() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
-        <div className="h-10 w-10 animate-spin border-2 border-accent-500 border-t-transparent" />
-      </div>
+      <PageSkeleton leading={1} titleWidth="w-40">
+        <Skeleton variant="card" count={3} className="h-32" />
+      </PageSkeleton>
     );
   }
 
@@ -74,14 +73,10 @@ export default function Contests() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            <GamepadIcon className="h-6 w-6" />
-            {t('contests.title')}
-          </span>
-        }
-      />
+      <div className="flex items-center gap-3">
+        <GamepadIcon className="h-6 w-6" />
+        <h1 className="text-2xl font-bold text-dark-50 sm:text-3xl">{t('contests.title')}</h1>
+      </div>
 
       {/* Game Modal */}
       {selectedContest && (
@@ -99,13 +94,13 @@ export default function Contests() {
 
             {getGameMutation.isPending && (
               <div className="flex justify-center py-8">
-                <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-500 border-t-transparent" />
               </div>
             )}
 
             {result && (
               <div
-                className={`mb-4 rounded-none p-4 ${result.is_winner ? 'bg-success-500/20 text-success-400' : 'bg-error-500/20 text-error-400'}`}
+                className={`mb-4 rounded-lg p-4 ${result.is_winner ? 'bg-success-500/20 text-success-400' : 'bg-error-500/20 text-error-400'}`}
               >
                 <p className="font-medium">{result.message}</p>
               </div>
@@ -125,7 +120,7 @@ export default function Contests() {
                         key={i}
                         onClick={() => handleSubmitAnswer(`${i}_${gameData.game_data.secret}`)}
                         disabled={submitAnswerMutation.isPending}
-                        className="flex aspect-square items-center justify-center rounded-none bg-dark-700 text-2xl transition-colors hover:bg-dark-600"
+                        className="flex aspect-square items-center justify-center rounded-lg bg-dark-700 text-2xl transition-colors hover:bg-dark-600"
                       >
                         {gameData.game_type === 'locks' ? '🔒' : '🎛'}
                       </button>
@@ -140,7 +135,7 @@ export default function Contests() {
                         key={i}
                         onClick={() => handleSubmitAnswer(flag)}
                         disabled={submitAnswerMutation.isPending}
-                        className="rounded-none bg-dark-700 p-3 text-2xl transition-colors hover:bg-dark-600"
+                        className="rounded-lg bg-dark-700 p-3 text-2xl transition-colors hover:bg-dark-600"
                       >
                         {flag}
                       </button>
@@ -152,7 +147,7 @@ export default function Contests() {
                   <button
                     onClick={() => handleSubmitAnswer('blitz')}
                     disabled={submitAnswerMutation.isPending}
-                    className="w-full rounded-none bg-accent-500 py-4 text-lg font-bold transition-colors hover:bg-accent-600"
+                    className="w-full rounded-lg bg-accent-500 py-4 text-lg font-bold transition-colors hover:bg-accent-600"
                   >
                     {gameData.game_data.button_text || t('contests.imHere')}
                   </button>
@@ -169,14 +164,14 @@ export default function Contests() {
                     }}
                     className="space-y-3"
                   >
-                    <div className="rounded-none bg-dark-700 p-4 text-center font-mono text-2xl">
+                    <div className="rounded-lg bg-dark-700 p-4 text-center font-mono text-2xl">
                       {gameData.game_data.question || gameData.game_data.letters}
                     </div>
                     <input
                       name="answer"
                       type="text"
                       placeholder={t('contests.enterAnswer')}
-                      className="w-full rounded-none border border-dark-600 bg-dark-700 px-4 py-3 focus:border-accent-500 focus:outline-none"
+                      className="w-full rounded-lg border border-dark-600 bg-dark-700 px-4 py-3 focus:border-accent-500 focus:outline-none"
                     />
                     <button
                       type="submit"
@@ -234,10 +229,10 @@ export default function Contests() {
           ))}
         </div>
       ) : (
-        <EmptyState
-          icon={<GamepadIcon className="h-8 w-8 text-dark-500" />}
-          title={t('contests.noContests')}
-        />
+        <div className="card py-12 text-center">
+          <GamepadIcon className="h-6 w-6" />
+          <p className="mt-4 text-dark-400">{t('contests.noContests')}</p>
+        </div>
       )}
     </div>
   );

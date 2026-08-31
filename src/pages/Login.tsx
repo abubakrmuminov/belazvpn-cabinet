@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -26,9 +26,13 @@ import { saveOAuthState } from '../utils/oauth';
 import { getPendingReferralCode } from '../utils/referral';
 import { UsersIcon, EmailIcon, RefreshIcon, ChevronDownIcon } from '@/components/icons';
 import LegalFooter from '../components/LegalFooter';
+import LegalConsent from '../components/LegalConsent';
+import { infoApi } from '../api/info';
+import type { LegalConsentConfig } from '../types';
+import { safeLocal, safeSession } from '../utils/safeStorage';
 
 export default function Login() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -64,23 +68,74 @@ export default function Login() {
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  const forgotEmailInputRef = useRef<HTMLInputElement>(null);
-
-  // Defer focus until the enclosing grid-rows accordion (duration-300) has
-  // finished expanding — autoFocus firing immediately pops the mobile keyboard
-  // mid-animation and causes a viewport jump, worse inside Telegram fullscreen
-  // where the SDK is simultaneously resizing the viewport.
-  useEffect(() => {
-    if (!showForgotPassword) return;
-    const timer = setTimeout(() => {
-      forgotEmailInputRef.current?.focus();
-    }, 320);
-    return () => clearTimeout(timer);
-  }, [showForgotPassword]);
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [forgotPasswordError, setForgotPasswordError] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(true);
+
+  // Гейт согласия с офертой/политикой для НОВОГО пользователя. Конфиг публичный:
+  // нужен до авторизации, чтобы нарисовать чекбоксы ещё на экране входа.
+  const { data: legalConsent } = useQuery<LegalConsentConfig>({
+    queryKey: ['legal-consent-config', i18n.language],
+    queryFn: () => infoApi.getLegalConsentConfig(i18n.language),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const consentDocuments = useMemo(() => legalConsent?.documents ?? [], [legalConsent]);
+  const [acceptedDocuments, setAcceptedDocuments] = useState<Record<string, boolean>>({});
+  // Telegram-вход происходит сам собой, поэтому чекбоксы показываем только когда
+  // бэк ответил 428: пользователь новый и без согласия аккаунт не создастся.
+  // Замыкание помнит, какой именно вход повторить после простановки галочек.
+  const [pendingConsentRetry, setPendingConsentRetry] = useState<
+    ((accepted: string[]) => Promise<void>) | null
+  >(null);
+
+  useEffect(() => {
+    if (!legalConsent?.prechecked || consentDocuments.length === 0) return;
+    setAcceptedDocuments((prev) => {
+      const next = { ...prev };
+      for (const document of consentDocuments) {
+        if (next[document] === undefined) next[document] = true;
+      }
+      return next;
+    });
+  }, [legalConsent?.prechecked, consentDocuments]);
+
+  const acceptedDocumentKeys = useMemo(
+    () => consentDocuments.filter((document) => acceptedDocuments[document]),
+    [consentDocuments, acceptedDocuments],
+  );
+  const allDocumentsAccepted =
+    consentDocuments.length === 0 || acceptedDocumentKeys.length === consentDocuments.length;
+
+  const toggleDocument = useCallback((document: string, value: boolean) => {
+    setAcceptedDocuments((prev) => ({ ...prev, [document]: value }));
+  }, []);
+
+  // 428 = бэк требует согласие. Запоминаем, что повторить, и рисуем чекбоксы.
+  const captureConsentRequirement = useCallback(
+    (err: unknown, retry: (accepted: string[]) => Promise<void>): boolean => {
+      const error = err as { response?: { status?: number; data?: { detail?: unknown } } };
+      if (error.response?.status !== 428) return false;
+
+      const detail = error.response?.data?.detail as
+        | { documents?: string[]; prechecked?: boolean }
+        | undefined;
+      if (detail?.documents?.length) {
+        const documents = detail.documents;
+        setAcceptedDocuments((prev) => {
+          const next = { ...prev };
+          for (const document of documents) {
+            if (next[document] === undefined) next[document] = Boolean(detail.prechecked);
+          }
+          return next;
+        });
+      }
+      setPendingConsentRetry(() => retry);
+      return true;
+    },
+    [],
+  );
 
   // Telegram safe area insets
   const { safeAreaInset, contentSafeAreaInset } = useTelegramSDK();
@@ -160,7 +215,11 @@ export default function Login() {
         throw new Error('Invalid OAuth redirect URL');
       }
 
-      saveOAuthState(state, provider);
+      if (!saveOAuthState(state, provider)) {
+        // Уйти к провайдеру без сохранённого state — значит гарантированно не
+        // вернуться в логин: та же ошибка, что и раньше, но без потери страницы.
+        throw new Error('OAuth state is not persistable');
+      }
       window.location.href = authorize_url;
     } catch {
       setError(t('auth.oauthError', 'Authorization was denied or failed'));
@@ -210,6 +269,16 @@ export default function Login() {
           if (import.meta.env.DEV)
             console.warn(`Telegram auth attempt ${attempt + 1} failed:`, status, detail);
 
+          // Не ошибка входа, а недостающее согласие: показываем чекбоксы.
+          const needsConsent = captureConsentRequirement(err, async (accepted) => {
+            await loginWithTelegram(initData, accepted);
+            navigate(getReturnUrl(), { replace: true });
+          });
+          if (needsConsent) {
+            setIsLoading(false);
+            return;
+          }
+
           if (status === 401 && attempt < MAX_RETRIES) {
             await new Promise((r) => setTimeout(r, 1500));
             continue;
@@ -224,15 +293,15 @@ export default function Login() {
     };
 
     tryTelegramAuth();
-  }, [isAuthInitializing, loginWithTelegram, navigate, t, getReturnUrl]);
+  }, [isAuthInitializing, loginWithTelegram, navigate, t, getReturnUrl, captureConsentRequirement]);
 
   const handleRetryTelegramAuth = () => {
     // Clear ALL cached auth state to prevent stale token/initData loops
     tokenStorage.clearTokens();
-    sessionStorage.removeItem('tapps/launchParams');
-    sessionStorage.removeItem('telegram_init_data');
-    localStorage.removeItem('cabinet-auth');
-    localStorage.removeItem('tg_user_id');
+    safeSession.removeItem('tapps/launchParams');
+    safeSession.removeItem('telegram_init_data');
+    safeLocal.removeItem('cabinet-auth');
+    safeLocal.removeItem('tg_user_id');
 
     try {
       // Close miniapp — Telegram will provide fresh initData on reopen
@@ -277,6 +346,7 @@ export default function Login() {
           password,
           firstName || undefined,
           referralCode || undefined,
+          acceptedDocumentKeys,
         );
         // Show "check your email" screen
         setRegisteredEmail(result.email);
@@ -285,6 +355,24 @@ export default function Login() {
       const error = err as { response?: { status?: number } };
       const status = error.response?.status;
       const detail = getApiErrorMessage(err, '');
+
+      // Конфиг чекбоксов мог протухнуть (админ включил гейт между загрузкой страницы
+      // и отправкой формы) — показываем недостающие галочки вместо сырой ошибки.
+      const needsConsent = captureConsentRequirement(err, async (accepted) => {
+        const retried = await registerWithEmail(
+          email,
+          password,
+          firstName || undefined,
+          referralCode || undefined,
+          accepted,
+        );
+        setPendingConsentRetry(null);
+        setRegisteredEmail(retried.email);
+      });
+      if (needsConsent) {
+        setIsLoading(false);
+        return;
+      }
 
       if (status === 400 && detail.includes('already registered')) {
         setError(t('auth.emailAlreadyRegistered', 'This email is already registered'));
@@ -333,7 +421,7 @@ export default function Login() {
 
   return (
     <div
-      className="relative flex min-h-[100dvh] flex-col items-center justify-center bg-dark-950 matte-grain px-4 sm:px-6 lg:px-8"
+      className="flex min-h-[100dvh] items-center justify-center px-4 sm:px-6 lg:px-8"
       style={{
         paddingTop:
           safeTop > 0 ? `${safeTop + 16}px` : 'calc(1rem + env(safe-area-inset-top, 0px))',
@@ -341,8 +429,10 @@ export default function Login() {
           safeBottom > 0 ? `${safeBottom + 16}px` : 'calc(1rem + env(safe-area-inset-bottom, 0px))',
       }}
     >
-      {/* Top hazard ribbon */}
-      <div className="fixed top-0 left-0 w-full h-1.5 hazard-stripes z-50" />
+      {/* Flat background — the previous two layered gradients (linear
+          + accent radial halo) read as the airdrop / crypto aesthetic
+          PRODUCT.md explicitly anti-references. Body bg-dark-950 carries
+          the surface alone. */}
 
       {/* Language switcher */}
       <div
@@ -357,10 +447,10 @@ export default function Login() {
       <div className="relative w-full max-w-md space-y-5">
         {/* Logo & branding */}
         <div className="text-center">
-          <div className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center overflow-hidden rounded-none border-2 border-dark-300 bg-dark-900 shadow-[4px_4px_0_0_#000]">
+          <div className="relative mx-auto mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-dark-700/50 bg-dark-800/80 shadow-md">
             {/* Letter fallback */}
             <span
-              className={`absolute text-xl font-black text-accent-500 transition-opacity duration-200 ${branding?.has_custom_logo && logoLoaded ? 'opacity-0' : 'opacity-100'}`}
+              className={`absolute text-lg font-bold text-accent-400 transition-opacity duration-200 ${branding?.has_custom_logo && logoLoaded ? 'opacity-0' : 'opacity-100'}`}
             >
               {appLogo}
             </span>
@@ -374,41 +464,80 @@ export default function Login() {
               />
             )}
           </div>
-          {appName && (
-            <h1 className="font-mono text-xl font-black uppercase tracking-widest text-industrial-yellow">
-              {appName}
-            </h1>
-          )}
-          <p className="mt-1 font-mono text-xs uppercase tracking-widest text-dark-500">
-            {t('auth.loginSubtitle')}
-          </p>
+          {appName && <h1 className="text-2xl font-bold text-dark-50">{appName}</h1>}
 
           {/* Referral Banner */}
           {referralCode && isEmailAuthEnabled && (
-            <div className="mt-3 rounded-none border-l-4 border-accent-500 bg-accent-500/10 p-2.5">
+            <div className="mt-3 rounded-xl border border-accent-500/30 bg-accent-500/10 p-2.5">
               <div className="flex items-center justify-center gap-2 text-accent-400">
                 <UsersIcon className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs font-bold uppercase tracking-wider">
-                  {t('auth.referralInvite')}
-                </span>
+                <span className="text-xs font-medium">{t('auth.referralInvite')}</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Check Email Screen */}
-        {registeredEmail ? (
-          <div className="rounded-none border-2 border-dark-300 bg-dark-900 p-6 shadow-[4px_4px_0_0_#000] text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-none border-2 border-success-500/50 bg-success-500/10">
+        {/* Экран согласия: бэк ответил 428 на автоматический Telegram-вход */}
+        {pendingConsentRetry ? (
+          <div className="card">
+            <h2 className="mb-2 text-lg font-bold text-dark-50">
+              {t('auth.legalConsentTitle', 'Ещё один шаг')}
+            </h2>
+            <p className="mb-4 text-sm text-dark-400">
+              {t(
+                'auth.legalConsentSubtitle',
+                'Чтобы создать аккаунт, подтвердите, что ознакомились с документами.',
+              )}
+            </p>
+
+            <LegalConsent
+              documents={consentDocuments}
+              accepted={acceptedDocuments}
+              onChange={toggleDocument}
+              disabled={isLoading}
+            />
+
+            {error && (
+              <p className="mt-4 text-sm text-error-400" role="alert">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="button"
+              className="btn-primary mt-5 w-full"
+              disabled={!allDocumentsAccepted || isLoading}
+              onClick={async () => {
+                setError('');
+                setIsLoading(true);
+                try {
+                  await pendingConsentRetry(acceptedDocumentKeys);
+                  setPendingConsentRetry(null);
+                } catch (err) {
+                  setError(getApiErrorMessage(err, t('common.error')));
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+            >
+              {isLoading
+                ? t('common.loading', 'Загрузка...')
+                : t('auth.legalConsentContinue', 'Продолжить')}
+            </button>
+          </div>
+        ) : /* Check Email Screen */
+        registeredEmail ? (
+          <div className="card text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-success-500/20">
               <EmailIcon className="h-7 w-7 text-success-400" />
             </div>
-            <h2 className="mb-2 font-mono text-base font-black uppercase tracking-widest text-dark-50">
+            <h2 className="mb-2 text-lg font-bold text-dark-50">
               {t('auth.checkEmail', 'Check your email')}
             </h2>
             <p className="mb-3 text-sm text-dark-400">
               {t('auth.verificationSent', 'We sent a verification link to:')}
             </p>
-            <p className="mb-4 font-mono text-sm font-bold text-accent-500">{registeredEmail}</p>
+            <p className="mb-4 text-sm font-medium text-accent-400">{registeredEmail}</p>
             <p className="mb-5 text-xs text-dark-500">
               {t(
                 'auth.clickLinkToVerify',
@@ -420,18 +549,18 @@ export default function Login() {
                 setRegisteredEmail(null);
                 setAuthMode('login');
               }}
-              className="w-full rounded-none border-2 border-dark-300 bg-dark-800 px-4 py-3 text-sm font-bold uppercase tracking-wider text-dark-200 shadow-[2px_2px_0_0_#000] transition-all duration-100 hover:bg-dark-700 active:translate-y-[2px] active:shadow-[1px_1px_0_0_#000]"
+              className="btn-secondary w-full"
             >
               {t('auth.backToLogin', 'Back to login')}
             </button>
           </div>
         ) : (
           /* Main auth card */
-          <div className="rounded-none border-2 border-dark-300 bg-dark-900 p-6 shadow-[4px_4px_0_0_#000]">
+          <div className="card">
             {error && (
               <div
                 role="alert"
-                className="mb-4 border-l-4 border-error-500 bg-error-500/10 px-4 py-2.5 text-sm font-bold text-error-400"
+                className="mb-4 rounded-xl border border-error-500/30 bg-error-500/10 px-4 py-2.5 text-sm text-error-400"
               >
                 {error}
               </div>
@@ -469,11 +598,9 @@ export default function Login() {
             {oauthProviders.length > 0 && (
               <>
                 <div className="my-4 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-dark-600" />
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-dark-500">
-                    {t('auth.or', 'or')}
-                  </span>
-                  <div className="h-px flex-1 bg-dark-600" />
+                  <div className="h-px flex-1 bg-dark-700" />
+                  <span className="text-xs text-dark-500">{t('auth.or', 'or')}</span>
+                  <div className="h-px flex-1 bg-dark-700" />
                 </div>
                 <div className="flex items-stretch gap-2">
                   {oauthProviders.map((provider) => (
@@ -482,15 +609,15 @@ export default function Login() {
                       type="button"
                       onClick={() => handleOAuthLogin(provider.name)}
                       disabled={oauthLoading !== null}
-                      className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-none border border-dark-400 bg-dark-800 py-3 shadow-[2px_2px_0_0_#000] transition-all duration-100 hover:bg-dark-700 active:translate-y-[2px] active:shadow-[1px_1px_0_0_#000] disabled:opacity-50"
+                      className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-dark-700 bg-dark-800/80 py-2.5 transition-all hover:border-dark-600 hover:bg-dark-700 disabled:opacity-50"
                       title={provider.display_name}
                     >
                       {oauthLoading === provider.name ? (
-                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-dark-400 border-t-accent-500" />
+                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-dark-400 border-t-white" />
                       ) : (
                         <OAuthProviderIcon provider={provider.name} className="h-5 w-5" />
                       )}
-                      <span className="font-mono text-[10px] font-bold uppercase leading-none tracking-wider text-dark-400">
+                      <span className="text-[10px] leading-none text-dark-500">
                         {provider.display_name}
                       </span>
                     </button>
@@ -503,19 +630,19 @@ export default function Login() {
             {isEmailAuthEnabled && (
               <>
                 <div className="my-4 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-dark-600" />
+                  <div className="h-px flex-1 bg-dark-700" />
                   <button
                     type="button"
                     onClick={() => setShowEmailForm(!showEmailForm)}
-                    className="flex items-center gap-1.5 rounded-none border border-dark-400 bg-dark-850 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-dark-300 shadow-[2px_2px_0_0_#000] transition-all duration-100 hover:bg-dark-700 hover:text-dark-100 active:translate-y-[2px] active:shadow-[1px_1px_0_0_#000]"
+                    className="flex items-center gap-1.5 rounded-full border border-dark-700 bg-dark-800/60 px-3.5 py-1.5 text-xs font-medium text-dark-300 transition-all hover:border-dark-600 hover:bg-dark-700 hover:text-dark-200"
                   >
-                    <EmailIcon className="h-3.5 w-3.5" />
+                    <EmailIcon className="h-3.5 w-3.5 text-dark-400" />
                     <span>{t('auth.loginWithEmail')}</span>
                     <ChevronDownIcon
-                      className={`h-3 w-3 transition-transform duration-200 ${showEmailForm ? 'rotate-180' : ''}`}
+                      className={`h-3 w-3 text-dark-400 transition-transform duration-300 ${showEmailForm ? 'rotate-180' : ''}`}
                     />
                   </button>
-                  <div className="h-px flex-1 bg-dark-600" />
+                  <div className="h-px flex-1 bg-dark-700" />
                 </div>
 
                 {/* Collapsible email form */}
@@ -531,7 +658,7 @@ export default function Login() {
                         /* Forgot password screen - replaces login/register */
                         forgotPasswordSent ? (
                           <div className="space-y-4 text-center">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-none bg-success-500/20">
+                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-success-500/20">
                               <EmailIcon className="h-6 w-6 text-success-400" />
                             </div>
                             <p className="text-sm font-medium text-dark-100">
@@ -565,13 +692,13 @@ export default function Login() {
                                   Email
                                 </label>
                                 <input
-                                  ref={forgotEmailInputRef}
                                   id="forgotEmail"
                                   type="email"
                                   value={forgotPasswordEmail}
                                   onChange={(e) => setForgotPasswordEmail(e.target.value)}
                                   placeholder="you@example.com"
                                   className="input"
+                                  autoFocus
                                 />
                               </div>
                               {forgotPasswordError && (
@@ -606,12 +733,12 @@ export default function Login() {
                       ) : (
                         /* Normal login / register */
                         <>
-                          <div className="flex border-2 border-dark-300 bg-dark-950 p-0.5">
+                          <div className="flex rounded-lg bg-dark-800 p-1">
                             <button
                               type="button"
-                              className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-all duration-100 ${
+                              className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
                                 authMode === 'login'
-                                  ? 'bg-accent-500 text-dark-950 shadow-[2px_2px_0_0_#000]'
+                                  ? 'bg-accent-500 text-on-accent'
                                   : 'text-dark-400 hover:text-dark-200'
                               }`}
                               onClick={() => setAuthMode('login')}
@@ -620,9 +747,9 @@ export default function Login() {
                             </button>
                             <button
                               type="button"
-                              className={`flex-1 py-2 text-xs font-black uppercase tracking-widest transition-all duration-100 ${
+                              className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
                                 authMode === 'register'
-                                  ? 'bg-accent-500 text-dark-950 shadow-[2px_2px_0_0_#000]'
+                                  ? 'bg-accent-500 text-on-accent'
                                   : 'text-dark-400 hover:text-dark-200'
                               }`}
                               onClick={() => setAuthMode('register')}
@@ -718,14 +845,26 @@ export default function Login() {
                               </div>
                             )}
 
+                            {authMode === 'register' && (
+                              <LegalConsent
+                                documents={consentDocuments}
+                                accepted={acceptedDocuments}
+                                onChange={toggleDocument}
+                                disabled={isLoading}
+                                className="pt-1"
+                              />
+                            )}
+
                             <button
                               type="submit"
-                              disabled={isLoading}
-                              className="w-full rounded-none border-2 border-dark-300 bg-accent-500 px-4 py-3 text-sm font-black uppercase tracking-widest text-dark-950 shadow-[3px_3px_0_0_#000] transition-all duration-100 hover:bg-accent-400 active:translate-y-[2px] active:shadow-[1px_1px_0_0_#000] disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={
+                                isLoading || (authMode === 'register' && !allDocumentsAccepted)
+                              }
+                              className="btn-primary w-full py-2.5"
                             >
                               {isLoading ? (
                                 <span className="flex items-center justify-center gap-2">
-                                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-dark-950/30 border-t-dark-950" />
+                                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                                   {t('common.loading')}
                                 </span>
                               ) : authMode === 'login' ? (

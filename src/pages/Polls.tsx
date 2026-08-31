@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { pollsApi, type PollInfo, type PollQuestion } from '../api/polls';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { ClipboardIcon, GiftIcon, CheckIcon, CloseIcon } from '@/components/icons';
-import { PageHeader } from '@/components/common/PageHeader';
-import { EmptyState } from '@/components/common/EmptyState';
+import { PageSkeleton, Skeleton } from '@/components/ui/skeleton';
 
 export default function Polls() {
   const { t } = useTranslation();
@@ -91,9 +90,9 @@ export default function Polls() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
-        <div className="h-10 w-10 animate-spin border-2 border-accent-500 border-t-transparent" />
-      </div>
+      <PageSkeleton leading={1} titleWidth="w-40">
+        <Skeleton variant="card" count={3} className="h-32" />
+      </PageSkeleton>
     );
   }
 
@@ -107,14 +106,10 @@ export default function Polls() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            <ClipboardIcon className="h-6 w-6" />
-            {t('polls.title')}
-          </span>
-        }
-      />
+      <div className="flex items-center gap-3">
+        <ClipboardIcon className="h-6 w-6" />
+        <h1 className="text-2xl font-bold text-dark-50 sm:text-3xl">{t('polls.title')}</h1>
+      </div>
 
       {/* Poll Modal */}
       {selectedPoll && (
@@ -147,13 +142,13 @@ export default function Polls() {
 
             {startPollMutation.isPending && (
               <div className="flex justify-center py-8">
-                <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-500 border-t-transparent" />
               </div>
             )}
 
             {completionMessage && (
               <div className="space-y-4">
-                <div className="rounded-none bg-success-500/20 p-4 text-center text-success-400">
+                <div className="rounded-lg bg-success-500/20 p-4 text-center text-success-400">
                   <CheckIcon className="h-5 w-5" />
                   <p className="mt-2 font-medium">{completionMessage.message}</p>
                   {completionMessage.reward && (
@@ -188,7 +183,7 @@ export default function Polls() {
                       key={option.id}
                       onClick={() => handleAnswer(option.id)}
                       disabled={answerMutation.isPending}
-                      className="w-full rounded-none bg-dark-700 p-4 text-left transition-colors hover:bg-dark-600 disabled:opacity-50"
+                      className="w-full rounded-lg bg-dark-700 p-4 text-left transition-colors hover:bg-dark-600 disabled:opacity-50"
                     >
                       {option.text}
                     </button>
@@ -197,7 +192,7 @@ export default function Polls() {
 
                 {answerMutation.isPending && (
                   <div className="flex justify-center">
-                    <div className="h-6 w-6 animate-spin border-2 border-accent-500 border-t-transparent" />
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-500 border-t-transparent" />
                   </div>
                 )}
               </div>
@@ -248,10 +243,10 @@ export default function Polls() {
           ))}
         </div>
       ) : (
-        <EmptyState
-          icon={<ClipboardIcon className="h-8 w-8 text-dark-500" />}
-          title={t('polls.noPolls')}
-        />
+        <div className="card py-12 text-center">
+          <ClipboardIcon className="h-6 w-6" />
+          <p className="mt-4 text-dark-400">{t('polls.noPolls')}</p>
+        </div>
       )}
     </div>
   );

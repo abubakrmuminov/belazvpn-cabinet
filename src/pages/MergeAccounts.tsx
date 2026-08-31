@@ -10,6 +10,7 @@ import { useToast } from '../components/Toast';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/data-display/Card';
 import { Button } from '@/components/primitives/Button';
 import { staggerContainer, staggerItem } from '@/components/motion/transitions';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import ProviderIcon from '../components/ProviderIcon';
 import type { MergeAccountPreview } from '../types';
@@ -144,7 +145,7 @@ function AccountCard({ account, label, isSelected, onSelect, showRadio }: Accoun
             {account.auth_methods.map((method) => (
               <span
                 key={method}
-                className="inline-flex items-center gap-1.5 rounded-none bg-dark-800 px-2.5 py-1 text-xs text-dark-200"
+                className="inline-flex items-center gap-1.5 rounded-md bg-dark-800 px-2.5 py-1 text-xs text-dark-200"
               >
                 <ProviderBadgeIcon provider={method} />
                 {t(`profile.accounts.providers.${method}`)}
@@ -192,7 +193,7 @@ function AccountCard({ account, label, isSelected, onSelect, showRadio }: Accoun
             role="radio"
             aria-checked={isSelected}
             onClick={onSelect}
-            className="mt-2 flex w-full items-center gap-2.5 rounded-none bg-dark-800/50 px-3 py-2.5 text-left transition-colors hover:bg-dark-800"
+            className="mt-2 flex w-full items-center gap-2.5 rounded-lg bg-dark-800/50 px-3 py-2.5 text-left transition-colors hover:bg-dark-800"
           >
             <RadioIndicator selected={isSelected} />
             <span className="text-sm text-dark-200">{t('merge.keepThisSubscription')}</span>
@@ -207,40 +208,42 @@ function AccountCard({ account, label, isSelected, onSelect, showRadio }: Accoun
 
 function LoadingSkeleton() {
   return (
-    <motion.div
-      className="space-y-6"
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-    >
-      <motion.div variants={staggerItem}>
-        <div className="flex items-center gap-3">
-          <div className="h-7 w-7 animate-pulse rounded bg-dark-700" />
-          <div className="h-7 w-48 animate-pulse rounded bg-dark-700" />
-        </div>
-      </motion.div>
-
-      {Array.from({ length: 3 }).map((_, i) => (
-        <motion.div key={i} variants={staggerItem}>
-          <Card>
-            <div className="space-y-4">
-              <div className="h-5 w-40 animate-pulse rounded bg-dark-700" />
-              <div className="h-4 w-64 animate-pulse rounded bg-dark-700" />
-              <div className="h-4 w-48 animate-pulse rounded bg-dark-700" />
-              <div className="h-4 w-32 animate-pulse rounded bg-dark-700" />
-            </div>
-          </Card>
+    <SkeletonGroup>
+      <motion.div
+        className="space-y-6"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
+        <motion.div variants={staggerItem}>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-7 w-7 shrink-0" />
+            <Skeleton className="h-7 w-48" />
+          </div>
         </motion.div>
-      ))}
 
-      <motion.div variants={staggerItem}>
-        <div className="h-12 w-full animate-pulse rounded-none bg-dark-700" />
-      </motion.div>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <motion.div key={i} variants={staggerItem}>
+            <Card>
+              <div className="space-y-4">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-64" />
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            </Card>
+          </motion.div>
+        ))}
 
-      <motion.div variants={staggerItem} className="flex justify-center">
-        <div className="h-4 w-32 animate-pulse rounded bg-dark-700" />
+        <motion.div variants={staggerItem}>
+          <Skeleton className="h-12 w-full rounded-xl" />
+        </motion.div>
+
+        <motion.div variants={staggerItem} className="flex justify-center">
+          <Skeleton className="h-4 w-32" />
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </SkeletonGroup>
   );
 }
 
@@ -481,7 +484,7 @@ export default function MergeAccounts() {
       {/* Subscription choice prompt (when both have subs) */}
       {bothHaveSubscriptions && !selectedUserId && (
         <motion.div variants={staggerItem}>
-          <div className="rounded-none border border-accent-500/30 bg-accent-500/10 px-4 py-3">
+          <div className="rounded-xl border border-accent-500/30 bg-accent-500/10 px-4 py-3">
             <p className="text-sm font-medium text-accent-400">{t('merge.chooseSubscription')}</p>
           </div>
         </motion.div>

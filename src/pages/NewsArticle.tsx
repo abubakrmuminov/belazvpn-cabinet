@@ -7,6 +7,7 @@ import DOMPurify from 'dompurify';
 import { newsApi } from '../api/news';
 import { usePlatform } from '../platform/hooks/usePlatform';
 import { BackIcon, ClockIcon, CalendarIcon } from '@/components/icons';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 
 /**
  * Sanitizes HTML content using DOMPurify to prevent XSS attacks.
@@ -252,17 +253,17 @@ export default function NewsArticlePage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="skeleton h-8 w-32 rounded-none" />
-        <div className="skeleton h-10 w-3/4 rounded-none" />
-        <div className="skeleton h-5 w-48 rounded-none" />
-        <div className="skeleton h-64 w-full rounded-none" />
+      <SkeletonGroup className="space-y-6">
+        <Skeleton className="h-8 w-32 rounded-lg" />
+        <Skeleton className="h-10 w-3/4 rounded-lg" />
+        <Skeleton className="h-5 w-48 rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-xl" />
         <div className="space-y-3">
-          <div className="skeleton h-4 w-full rounded" />
-          <div className="skeleton h-4 w-5/6 rounded" />
-          <div className="skeleton h-4 w-4/6 rounded" />
+          <Skeleton className="h-4 w-full rounded" />
+          <Skeleton className="h-4 w-5/6 rounded" />
+          <Skeleton className="h-4 w-4/6 rounded" />
         </div>
-      </div>
+      </SkeletonGroup>
     );
   }
 
@@ -272,13 +273,13 @@ export default function NewsArticlePage() {
         {!capabilities.hasBackButton && (
           <button
             onClick={() => navigate('/')}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-none border border-dark-700 bg-dark-800 transition-colors hover:border-dark-600"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-dark-700 bg-dark-800 transition-colors hover:border-dark-600"
             aria-label={t('news.backToHome')}
           >
             <BackIcon />
           </button>
         )}
-        <div className="rounded-none border border-dark-700 bg-dark-800/50 p-8 text-center text-dark-400">
+        <div className="rounded-xl border border-dark-700 bg-dark-800/50 p-8 text-center text-dark-400">
           {t('news.noNews')}
         </div>
       </div>
@@ -291,7 +292,7 @@ export default function NewsArticlePage() {
       {!capabilities.hasBackButton && (
         <button
           onClick={() => navigate(-1)}
-          className="flex min-h-[44px] items-center gap-2 rounded-none border border-dark-700 bg-dark-800 px-4 text-sm text-dark-400 transition-colors hover:border-dark-600 hover:text-dark-200"
+          className="flex min-h-[44px] items-center gap-2 rounded-xl border border-dark-700 bg-dark-800 px-4 text-sm text-dark-400 transition-colors hover:border-dark-600 hover:text-dark-200"
           aria-label={t('news.backToHome')}
         >
           <BackIcon />
@@ -312,7 +313,7 @@ export default function NewsArticlePage() {
             return (
               <>
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-none px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest"
+                  className="inline-flex items-center gap-1.5 rounded-md px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest"
                   style={{
                     color,
                     background: `${color}15`,
@@ -371,12 +372,12 @@ export default function NewsArticlePage() {
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="overflow-hidden rounded-none"
+          className="overflow-hidden rounded-xl"
         >
           <img
             src={article.featured_image_url}
             alt={article.title}
-            className="max-h-96 w-full rounded-none object-cover"
+            className="max-h-96 w-full rounded-xl object-cover"
             loading="eager"
             fetchPriority="high"
           />

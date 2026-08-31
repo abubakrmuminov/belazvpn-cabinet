@@ -16,6 +16,7 @@ import { saveTopUpPendingInfo } from '../utils/topUpStorage';
 import { getSafeRedirectPath } from '../utils/safeRedirect';
 import { openPaymentUrl } from '../utils/openPaymentUrl';
 import { copyToClipboard } from '@/utils/clipboard';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import {
   CardIcon,
   CheckIcon,
@@ -295,9 +296,9 @@ export default function TopUpAmount() {
       return null;
     }
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin border-2 border-accent-500 border-t-transparent" />
-      </div>
+      <SkeletonGroup className="space-y-3">
+        <Skeleton variant="card" count={3} className="h-16" />
+      </SkeletonGroup>
     );
   }
 
@@ -417,9 +418,9 @@ export default function TopUpAmount() {
       {/* Header icon and method */}
       <motion.div variants={staggerItem} className="flex items-center gap-4 pb-1">
         <div
-          className={`flex h-14 w-14 items-center justify-center rounded-none ${
+          className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
             isStarsMethod
-              ? 'bg-gradient-to-br from-warning-500/20 to-warning-600/20 text-warning-400'
+              ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 text-yellow-400'
               : 'bg-gradient-to-br from-accent-500/20 to-accent-600/20 text-accent-400'
           }`}
         >
@@ -443,7 +444,7 @@ export default function TopUpAmount() {
                 key={opt.id}
                 type="button"
                 onClick={() => setSelectedOption(opt.id)}
-                className={`relative rounded-none px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                className={`relative rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                   selectedOption === opt.id
                     ? 'bg-accent-500/15 text-accent-400 ring-2 ring-accent-500/40'
                     : 'border border-dark-700/50 bg-dark-800/70 text-dark-300 hover:bg-dark-700/70'
@@ -466,7 +467,7 @@ export default function TopUpAmount() {
         <label className="text-sm font-medium text-dark-400">{t('balance.enterAmount')}</label>
         <div className="flex gap-2">
           <div
-            className={`relative flex-1 rounded-none transition-all duration-200 ${
+            className={`relative flex-1 rounded-2xl transition-all duration-200 ${
               isInputFocused
                 ? 'bg-dark-800 ring-2 ring-accent-500/50'
                 : 'border border-dark-700/50 bg-dark-800/70'
@@ -474,7 +475,7 @@ export default function TopUpAmount() {
           >
             <input
               ref={inputRef}
-              type="text"
+              type="number"
               inputMode="decimal"
               enterKeyHint="done"
               value={amount}
@@ -502,16 +503,16 @@ export default function TopUpAmount() {
             type="button"
             onClick={handleSubmit}
             disabled={isPending || !amount || parseFloat(amount) <= 0}
-            className={`flex h-14 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-none px-6 text-base font-bold transition-colors duration-200 ${
+            className={`flex h-14 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-2xl px-6 text-base font-bold transition-colors duration-200 ${
               isPending || !amount || parseFloat(amount) <= 0
                 ? 'cursor-not-allowed bg-dark-700 text-dark-500'
                 : isStarsMethod
-                  ? 'bg-gradient-to-r from-warning-500 to-warning-600 text-on-warning shadow-lg shadow-warning-500/25 hover:from-warning-400 hover:to-warning-500 active:from-warning-600 active:to-warning-700'
+                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg shadow-yellow-500/25 hover:from-yellow-400 hover:to-orange-400 active:from-yellow-600 active:to-orange-600'
                   : 'bg-accent-500 text-on-accent shadow-lg shadow-accent-500/25 transition-colors hover:bg-accent-400 active:bg-accent-600'
             }`}
           >
             {isPending ? (
-              <span className="h-5 w-5 animate-spin border-2 border-white/30 border-t-white" />
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             ) : (
               <>
                 <SparklesIcon className="h-4 w-4" />
@@ -564,7 +565,7 @@ export default function TopUpAmount() {
       {error && (
         <motion.div
           variants={staggerItem}
-          className="flex items-center gap-2 rounded-none border border-error-500/20 bg-error-500/10 p-3"
+          className="flex items-center gap-2 rounded-xl border border-error-500/20 bg-error-500/10 p-3"
         >
           <ExclamationIcon className="h-5 w-5 shrink-0 text-error-400" />
           <span className="text-sm text-error-400">{error}</span>
@@ -575,7 +576,7 @@ export default function TopUpAmount() {
       {paymentUrl && (
         <motion.div
           variants={staggerItem}
-          className="space-y-3 rounded-none border border-success-500/20 bg-success-500/10 p-4"
+          className="space-y-3 rounded-2xl border border-success-500/20 bg-success-500/10 p-4"
         >
           <div className="flex items-center gap-2 text-success-400">
             <CheckIcon className="h-5 w-5" />
@@ -587,20 +588,20 @@ export default function TopUpAmount() {
           <button
             type="button"
             onClick={handleOpenPayment}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-none bg-success-500 font-bold text-white transition-colors hover:bg-success-400 active:bg-success-600"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-success-500 font-bold text-white transition-colors hover:bg-success-400 active:bg-success-600"
           >
             <ExternalLinkIcon />
             <span>{t('balance.openPaymentPage')}</span>
           </button>
 
           <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1 rounded-none border border-dark-700/50 bg-dark-800/70 px-3 py-2">
+            <div className="min-w-0 flex-1 rounded-lg border border-dark-700/50 bg-dark-800/70 px-3 py-2">
               <p className="truncate text-xs text-dark-500">{paymentUrl}</p>
             </div>
             <button
               type="button"
               onClick={handleCopyUrl}
-              className={`shrink-0 rounded-none p-2.5 transition-colors ${
+              className={`shrink-0 rounded-lg p-2.5 transition-colors ${
                 copied
                   ? 'bg-success-500/20 text-success-400'
                   : 'bg-dark-800/70 text-dark-400 hover:bg-dark-700 hover:text-dark-200'
