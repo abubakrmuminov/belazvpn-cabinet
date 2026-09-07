@@ -163,9 +163,7 @@ export function AppShell({ children }: AppShellProps) {
           <span
             className={cn(
               'absolute inset-0 rounded-none border border-black shadow-[2px_2px_0_0_#000]',
-              admin
-                ? 'bg-warning-500/20 border-warning-500'
-                : 'bg-accent-500',
+              admin ? 'bg-warning-500/20 border-warning-500' : 'bg-accent-500',
             )}
           />
         )}
@@ -217,7 +215,9 @@ export function AppShell({ children }: AppShellProps) {
                 />
               )}
             </div>
-            <span className="text-base font-black tracking-tighter text-industrial-yellow uppercase">{appName}</span>
+            <span className="text-base font-black tracking-tighter text-industrial-yellow uppercase">
+              {appName}
+            </span>
           </Link>
 
           {/* Navigation — единая «капсула» */}
