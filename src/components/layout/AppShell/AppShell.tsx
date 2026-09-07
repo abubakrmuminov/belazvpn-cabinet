@@ -51,7 +51,7 @@ export function AppShell({ children }: AppShellProps) {
   const logout = useAuthStore((state) => state.logout);
   const { isFullscreen, safeAreaInset, contentSafeAreaInset, platform, isMobile } =
     useTelegramSDK();
-  const { mobile: headerHeight } = useHeaderHeight();
+  const { mobileCss: headerHeight } = useHeaderHeight();
   const haptic = useHaptic();
   const { toggleTheme, isDark } = useTheme();
 
@@ -288,12 +288,15 @@ export function AppShell({ children }: AppShellProps) {
       {/* Mobile spacer */}
       <div className="lg:hidden" style={{ height: headerHeight }} />
 
-      {/* Main content — bottom padding accounts for fixed chassis nav bar */}
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-24 lg:px-6 lg:pb-10">{children}</main>
+      {/* Main content */}
+      <main className="mx-auto max-w-6xl py-6 pb-[calc(var(--mobile-nav-clearance,6rem)+0.5rem)] pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] lg:px-6 lg:pb-10">
+        {children}
+      </main>
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav
         isKeyboardOpen={isKeyboardOpen}
+        isMenuOpen={mobileMenuOpen}
         referralEnabled={referralEnabled}
         wheelEnabled={wheelEnabled}
       />

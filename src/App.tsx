@@ -135,6 +135,9 @@ const AdminPromoOfferTemplateEdit = lazyWithRetry(
   () => import('./pages/AdminPromoOfferTemplateEdit'),
 );
 const AdminPromoOfferSend = lazyWithRetry(() => import('./pages/AdminPromoOfferSend'));
+const AdminReachability = lazyWithRetry(() => import('./pages/AdminReachability'));
+const AdminReachabilityHistory = lazyWithRetry(() => import('./pages/AdminReachabilityHistory'));
+const AdminReachabilityOther = lazyWithRetry(() => import('./pages/AdminReachabilityOther'));
 const AdminRemnawave = lazyWithRetry(() => import('./pages/AdminRemnawave'));
 const AdminRemnawaveSquadDetail = lazyWithRetry(() => import('./pages/AdminRemnawaveSquadDetail'));
 const AdminEmailTemplates = lazyWithRetry(() => import('./pages/AdminEmailTemplates'));
@@ -153,6 +156,7 @@ const AdminRoleAssign = lazyWithRetry(() => import('./pages/AdminRoleAssign'));
 const AdminPolicies = lazyWithRetry(() => import('./pages/AdminPolicies'));
 const AdminPolicyEdit = lazyWithRetry(() => import('./pages/AdminPolicyEdit'));
 const AdminAuditLog = lazyWithRetry(() => import('./pages/AdminAuditLog'));
+const AdminSystemErrors = lazyWithRetry(() => import('./pages/AdminSystemErrors'));
 const AdminLandings = lazyWithRetry(() => import('./pages/AdminLandings'));
 const AdminLandingEditor = lazyWithRetry(() => import('./pages/AdminLandingEditor'));
 const AdminLandingStats = lazyWithRetry(() => import('./pages/AdminLandingStats'));
@@ -821,6 +825,36 @@ function App() {
           }
         />
         <Route
+          path="/admin/reachability"
+          element={
+            <PermissionRoute permission="reachability:read">
+              <LazyPage>
+                <AdminReachability />
+              </LazyPage>
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/admin/reachability/history"
+          element={
+            <PermissionRoute permission="reachability:read">
+              <LazyPage>
+                <AdminReachabilityHistory />
+              </LazyPage>
+            </PermissionRoute>
+          }
+        />
+        <Route
+          path="/admin/reachability/other"
+          element={
+            <PermissionRoute permission="reachability:read">
+              <LazyPage>
+                <AdminReachabilityOther />
+              </LazyPage>
+            </PermissionRoute>
+          }
+        />
+        <Route
           path="/admin/broadcasts"
           element={
             <PermissionRoute permission="broadcasts:read">
@@ -1454,6 +1488,17 @@ function App() {
             <PermissionRoute permission="audit_log:read">
               <LazyPage>
                 <AdminAuditLog />
+              </LazyPage>
+            </PermissionRoute>
+          }
+        />
+
+        <Route
+          path="/admin/system-errors"
+          element={
+            <PermissionRoute permission="system_errors:read">
+              <LazyPage>
+                <AdminSystemErrors />
               </LazyPage>
             </PermissionRoute>
           }

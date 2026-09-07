@@ -101,6 +101,9 @@
 @layer base {
   :root {
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --mobile-nav-height: 76px;
+    --mobile-nav-offset: max(16px, env(safe-area-inset-bottom, 0px));
+    --mobile-nav-clearance: calc(var(--mobile-nav-height) + var(--mobile-nav-offset) + 12px);
 
     /* Unified Card System - Zero rounded corners for industrial cabinets */
     --bento-radius: 0px;

@@ -9,12 +9,15 @@ import { HomeIcon, SubscriptionIcon, WalletIcon, UsersIcon, ChatIcon, WheelIcon 
 
 interface MobileBottomNavProps {
   isKeyboardOpen: boolean;
+  /** Открыто выезжающее меню шапки: у него есть все те же пункты, панель поверх него лишняя. */
+  isMenuOpen?: boolean;
   referralEnabled?: boolean;
   wheelEnabled?: boolean;
 }
 
 export function MobileBottomNav({
   isKeyboardOpen,
+  isMenuOpen = false,
   referralEnabled,
   wheelEnabled,
 }: MobileBottomNavProps) {
@@ -60,7 +63,7 @@ export function MobileBottomNav({
         'fixed bottom-0 left-0 right-0 z-50 transition-all duration-200 lg:hidden',
         'bg-dark-900 border-t-2 border-dark-600',
         'shadow-[0_-3px_0_0_#000]',
-        isKeyboardOpen ? 'pointer-events-none translate-y-full' : 'translate-y-0',
+        isKeyboardOpen || isMenuOpen ? 'pointer-events-none opacity-0' : 'opacity-100',
       )}
       style={{
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',

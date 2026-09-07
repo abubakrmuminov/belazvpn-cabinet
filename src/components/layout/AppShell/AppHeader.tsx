@@ -2,12 +2,12 @@ import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { initDataUser } from '@telegram-apps/sdk-react';
 
 import { useAuthStore } from '@/store/auth';
 import { displayName } from '@/utils/displayName';
 import { useShallow } from 'zustand/shallow';
 import { useTheme } from '@/hooks/useTheme';
+import { useUserAvatar } from '@/hooks/useUserAvatar';
 import { usePlatform } from '@/platform';
 import {
   brandingApi,
@@ -53,7 +53,8 @@ interface AppHeaderProps {
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
   onCommandPaletteOpen: () => void;
-  headerHeight: number;
+  /** CSS-длина шапки (учитывает safe-area) — сдвиг оверлея меню. */
+  headerHeight: string;
   isFullscreen: boolean;
   safeAreaInset: { top: number; bottom: number; left: number; right: number };
   contentSafeAreaInset: { top: number; bottom: number; left: number; right: number };
@@ -87,7 +88,7 @@ export function AppHeader({
   );
   const { toggleTheme, isDark } = useTheme();
   const { haptic, platform } = usePlatform();
-  const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
+  const avatar = useUserAvatar(user);
   const [logoLoaded, setLogoLoaded] = useState(() => isLogoPreloaded());
 
   // Branding
@@ -118,18 +119,6 @@ export function AppHeader({
     staleTime: 1000 * 60 * 5,
   });
   const canToggle = enabledThemes?.dark && enabledThemes?.light;
-
-  // Get user photo from Telegram
-  useEffect(() => {
-    try {
-      const user = initDataUser();
-      if (user?.photo_url) {
-        setUserPhotoUrl(user.photo_url);
-      }
-    } catch {
-      // Not in Telegram or init data not available
-    }
-  }, []);
 
   // Lock scroll when menu is open (works in iframe/Telegram Mini App)
   useEffect(() => {
@@ -174,19 +163,24 @@ export function AppHeader({
 
   return (
     <>
-      {/* Header - only on mobile */}
+      {/* Header - only on mobile. В standalone-режиме iOS («На экран Домой»)
+          шапка продолжается под статус-бар через padding-top; тон для этого
+          режима задаёт .app-mobile-header в globals.css (display-mode: standalone),
+          чтобы не было ни отдельного светлого блока, ни жёсткой границы. */}
       <header
         className="fixed left-0 right-0 top-0 z-50 bg-dark-900 border-b-2 border-dark-300 shadow-[0_2px_0_0_rgba(0,0,0,0.6)] lg:hidden"
         style={{
           paddingTop: isFullscreen
             ? `${Math.max(safeAreaInset.top, contentSafeAreaInset.top) + (telegramPlatform === 'android' ? 48 : 45)}px`
-            : undefined,
+            : 'env(safe-area-inset-top, 0px)',
         }}
       >
         {/* Top hazard line */}
         <div className="h-1.5 w-full hazard-stripes" />
         <div
-          className="mx-auto w-full px-4"
+          // Боковые отступы не меньше вырезов: в альбомной ориентации iPhone
+          // env(safe-area-inset-left/right) — это чёлка и скруглённые углы.
+          className="mx-auto w-full pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]"
           onClick={() => mobileMenuOpen && setMobileMenuOpen(false)}
         >
           <div className="flex h-14 items-center justify-between">
@@ -306,29 +300,25 @@ export function AppHeader({
             className="mobile-menu-content absolute inset-x-0 bottom-0 top-0 overflow-y-auto overscroll-contain border-t-2 border-dark-300 bg-dark-900 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="mx-auto max-w-6xl px-4 py-4">
+            <div className="mx-auto max-w-6xl py-4 pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]">
               {/* User info */}
               <div className="mb-4 flex items-center justify-between border-b-2 border-dark-700 pb-4">
                 <div className="flex items-center gap-3">
-                  {userPhotoUrl ? (
+                  {/* Заглушка — через состояние, а не правкой DOM: прежний onError прятал
+                      картинку руками, и любой ре-рендер возвращал класс hidden заглушке,
+                      оставляя пустое место. */}
+                  {avatar.src ? (
                     <img
-                      src={userPhotoUrl}
+                      src={avatar.src}
                       alt="Avatar"
                       className="h-10 w-10 rounded-none border border-dark-500 object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                      }}
+                      onError={avatar.onError}
                     />
-                  ) : null}
-                  <div
-                    className={cn(
-                      'flex h-10 w-10 items-center justify-center rounded-none border border-dark-500 bg-dark-800',
-                      userPhotoUrl ? 'hidden' : '',
-                    )}
-                  >
-                    <UserIcon className="h-5 w-5 text-dark-300" />
-                  </div>
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-none border border-dark-500 bg-dark-800">
+                      <UserIcon className="h-5 w-5 text-dark-300" />
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold uppercase tracking-wider text-dark-50">
                       {displayName(user)}
