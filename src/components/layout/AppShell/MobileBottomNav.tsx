@@ -3,55 +3,37 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { usePlatform } from '@/platform';
+import { HIDDEN_UNDER_KEYBOARD, useVirtualKeyboard } from '@/hooks/useVirtualKeyboard';
 
-// Icons
 import { HomeIcon, SubscriptionIcon, WalletIcon, UsersIcon, ChatIcon, WheelIcon } from './icons';
+import type { MobileNavItem, MobileNavKey } from './mobileNavRoutes';
+
+type NavIcon = React.ComponentType<{ className?: string }>;
+
+const ICONS: Record<MobileNavKey, NavIcon> = {
+  dashboard: HomeIcon,
+  subscription: SubscriptionIcon,
+  balance: WalletIcon,
+  wheel: WheelIcon,
+  referral: UsersIcon,
+  support: ChatIcon,
+};
 
 interface MobileBottomNavProps {
-  isKeyboardOpen: boolean;
+  /** Экраны панели — из mobileNavItems(); AppShell рендерит панель только на них. */
+  items: readonly MobileNavItem[];
   /** Открыто выезжающее меню шапки: у него есть все те же пункты, панель поверх него лишняя. */
   isMenuOpen?: boolean;
-  referralEnabled?: boolean;
-  wheelEnabled?: boolean;
 }
 
-export function MobileBottomNav({
-  isKeyboardOpen,
-  isMenuOpen = false,
-  referralEnabled,
-  wheelEnabled,
-}: MobileBottomNavProps) {
+export function MobileBottomNav({ items, isMenuOpen = false }: MobileBottomNavProps) {
   const { t } = useTranslation();
   const location = useLocation();
   const { haptic } = usePlatform();
+  const isKeyboardOpen = useVirtualKeyboard();
 
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
-
-  // Core navigation items for bottom bar.
-  //
-  // Support is ALWAYS present — frustrated paying customers must find help
-  // in the primary nav, not in the hamburger drawer. Previously Wheel
-  // (a brand-moment surface) displaced Support (a critical-path surface)
-  // when the wheel feature flag was on; that trade is hostile to the
-  // support-user persona and was flagged by the /impeccable critique.
-  //
-  // Slot priority when both Wheel and Referral are enabled and only
-  // four slots remain after Dashboard / Subscriptions / Balance / Support:
-  //   - Wheel wins (operator opted in as a deliberate brand moment)
-  //   - Referral falls back to the hamburger drawer
-  // When only one of them is enabled, that one fills the slot.
-  const coreItems = [
-    { path: '/', label: t('nav.dashboard'), icon: HomeIcon },
-    { path: '/subscriptions', label: t('nav.subscription'), icon: SubscriptionIcon },
-    { path: '/balance', label: t('nav.balance'), icon: WalletIcon },
-    ...(wheelEnabled
-      ? [{ path: '/wheel', label: t('nav.wheel'), icon: WheelIcon }]
-      : referralEnabled
-        ? [{ path: '/referral', label: t('nav.referral'), icon: UsersIcon }]
-        : []),
-    { path: '/support', label: t('nav.support'), icon: ChatIcon },
-  ];
 
   const handleNavClick = () => {
     haptic.impact('light');
@@ -63,35 +45,38 @@ export function MobileBottomNav({
         'fixed bottom-0 left-0 right-0 z-50 transition-all duration-200 lg:hidden',
         'bg-dark-900 border-t-2 border-dark-600',
         'shadow-[0_-3px_0_0_#000]',
-        isKeyboardOpen || isMenuOpen ? 'pointer-events-none opacity-0' : 'opacity-100',
+        isKeyboardOpen || isMenuOpen ? HIDDEN_UNDER_KEYBOARD : 'opacity-100',
       )}
       style={{
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
       <div className="flex justify-around">
-        {coreItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            onClick={handleNavClick}
-            className={cn(
-              'relative flex min-w-0 flex-1 shrink-0 flex-col items-center justify-center px-1 py-2.5 transition-all duration-[80ms]',
-              'font-mono text-[9px] font-black uppercase tracking-wider',
-              isActive(item.path) ? 'text-accent-500' : 'text-dark-500 hover:text-dark-200',
-            )}
-          >
-            {/* Active top-bar indicator — industrial accent stripe */}
-            {isActive(item.path) && (
-              <>
-                <span className="absolute inset-x-0 top-0 h-[3px] bg-accent-500" />
-                <span className="absolute inset-x-0 top-0 h-px bg-accent-400/50" />
-              </>
-            )}
-            <item.icon className="relative z-10 h-5 w-5 mb-0.5" />
-            <span className="relative z-10 w-full truncate text-center">{item.label}</span>
-          </Link>
-        ))}
+        {items.map((item) => {
+          const Icon = ICONS[item.key];
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={handleNavClick}
+              className={cn(
+                'relative flex min-w-0 flex-1 shrink-0 flex-col items-center justify-center px-1 py-2.5 transition-all duration-[80ms]',
+                'font-mono text-[9px] font-black uppercase tracking-wider',
+                isActive(item.path) ? 'text-accent-500' : 'text-dark-500 hover:text-dark-200',
+              )}
+            >
+              {/* Active top-bar indicator — industrial accent stripe */}
+              {isActive(item.path) && (
+                <>
+                  <span className="absolute inset-x-0 top-0 h-[3px] bg-accent-500" />
+                  <span className="absolute inset-x-0 top-0 h-px bg-accent-400/50" />
+                </>
+              )}
+              {Icon && <Icon className="relative z-10 h-5 w-5 mb-0.5" />}
+              <span className="relative z-10 w-full truncate text-center">{t(`nav.${item.key}`)}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
