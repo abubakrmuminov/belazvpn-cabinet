@@ -28,13 +28,27 @@ import {
   DownloadIcon,
   TrashIcon,
 } from '../components/icons';
-import { useHaptic } from '../platform';
+import { useHaptic, usePlatform } from '../platform';
 import { resolveConnectionUrlForUi } from '../utils/connectionLink';
 import {
   getErrorMessage,
   getInsufficientBalanceError,
   getFlagEmoji,
 } from '../utils/subscriptionHelpers';
+import { openPaymentUrl } from '../utils/openPaymentUrl';
+import { useToast } from '../components/Toast';
+import {
+  isSbpFeatureDisabledError,
+  sbpIntervalLabelKey,
+  sbpUiState,
+  type SbpUiState,
+} from '../utils/sbpRecurring';
+import {
+  isLavaFeatureDisabledError,
+  lavaPeriodLabelKey,
+  lavaUiState,
+  type LavaUiState,
+} from '../utils/lavaRecurring';
 import Twemoji from 'react-twemoji';
 import { DeviceTopupSheet } from '../components/subscription/sheets/DeviceTopupSheet';
 import { DeviceReductionSheet } from '../components/subscription/sheets/DeviceReductionSheet';
@@ -87,14 +101,14 @@ const CountdownTimer = memo(function CountdownTimer({
       className="min-w-0 overflow-hidden rounded-none p-3.5"
       style={{
         background: isExpired
-          ? 'rgba(var(--color-critical-500),0.06)'
+          ? 'rgba(255,59,92,0.06)'
           : isUrgent
-            ? 'rgba(var(--color-urgent-400),0.06)'
+            ? 'rgba(255,184,0,0.06)'
             : g.innerBg,
         border: isExpired
-          ? '1px solid rgba(var(--color-critical-500),0.15)'
+          ? '1px solid rgba(255,59,92,0.15)'
           : isUrgent
-            ? '1px solid rgba(var(--color-urgent-400),0.15)'
+            ? '1px solid rgba(255,184,0,0.15)'
             : `1px solid ${g.innerBorder}`,
       }}
     >
@@ -103,9 +117,9 @@ const CountdownTimer = memo(function CountdownTimer({
           className="flex h-6 w-6 items-center justify-center rounded-none"
           style={{
             background: isExpired
-              ? 'rgba(var(--color-critical-500),0.1)'
+              ? 'rgba(255,59,92,0.1)'
               : isUrgent
-                ? 'rgba(var(--color-urgent-400),0.1)'
+                ? 'rgba(255,184,0,0.1)'
                 : g.hoverBg,
           }}
         >
@@ -197,6 +211,8 @@ export default function Subscription() {
   const { isDark } = useTheme();
   const g = getGlassColors(isDark);
   const haptic = useHaptic();
+  const { openLink, platform } = usePlatform();
+  const { showToast } = useToast();
   const [copied, setCopied] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const destructiveConfirm = useDestructiveConfirm();
@@ -293,12 +309,162 @@ export default function Subscription() {
 
   const isTariffsMode = purchaseOptions?.sales_mode === 'tariffs';
 
+  // SBP (Platega) recurring auto-payment status. Polls every 8s while a
+  // payment is PENDING (waiting for bank-app confirmation) so the UI flips
+  // to 'active'/'past_due' without a manual refresh; stops polling otherwise.
+  const sbpQuery = useQuery({
+    queryKey: ['sbp-recurring', subscriptionId],
+    queryFn: () => subscriptionApi.getSbpRecurring(subscriptionId),
+    enabled: !!subscription && !subscription.is_trial,
+    retry: false,
+    refetchInterval: (query) => (query.state.data?.status === 'PENDING' ? 8000 : false),
+  });
+  const sbpInfo = sbpQuery.data;
+  // 403 with a specific detail means the feature itself is disabled on the
+  // backend — distinct from "not resolved yet" or "other error", both of
+  // which must fail quiet (render nothing) rather than flash the 'off' state.
+  const sbpFeatureDisabled = isSbpFeatureDisabledError(sbpQuery.error);
+  const sbpUiStateValue: SbpUiState =
+    sbpInfo !== undefined || sbpFeatureDisabled
+      ? sbpUiState(sbpInfo, sbpFeatureDisabled)
+      : 'hidden';
+
+  const enableSbpMutation = useMutation({
+    mutationFn: () => subscriptionApi.enableSbpRecurring(subscriptionId),
+    onSuccess: (data) => {
+      if (data.redirect_url) {
+        openPaymentUrl(data.redirect_url, platform, openLink);
+      }
+      queryClient.invalidateQueries({ queryKey: ['sbp-recurring', subscriptionId] });
+      // Backend flips autopay_enabled off when SBP auto-pay is enabled.
+      queryClient.invalidateQueries({ queryKey: ['subscription', subscriptionId] });
+    },
+    onError: (error: unknown) => {
+      const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data
+        ?.detail;
+      showToast({
+        type: 'error',
+        title: typeof detail === 'string' ? detail : t('subscription.sbpRecurring.enableError'),
+        message: '',
+        duration: 3000,
+      });
+    },
+  });
+
+  const cancelSbpMutation = useMutation({
+    mutationFn: () => subscriptionApi.cancelSbpRecurring(subscriptionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sbp-recurring', subscriptionId] });
+      queryClient.invalidateQueries({ queryKey: ['subscription', subscriptionId] });
+      showToast({
+        type: 'success',
+        title: t('subscription.sbpRecurring.cancelled'),
+        message: '',
+        duration: 3000,
+      });
+    },
+    onError: (error: unknown) => {
+      const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data
+        ?.detail;
+      showToast({
+        type: 'error',
+        title: typeof detail === 'string' ? detail : t('subscription.sbpRecurring.cancelError'),
+        message: '',
+        duration: 3000,
+      });
+    },
+  });
+
+  const handleCancelSbp = async () => {
+    const confirmed = await destructiveConfirm(
+      t('subscription.sbpRecurring.confirmCancel'),
+      t('subscription.sbpRecurring.cancel'),
+    );
+    if (!confirmed) return;
+    cancelSbpMutation.mutate();
+  };
+
+  // Автопродление Lava — независимый от Platega движок с той же семантикой
+  // состояний. Поллинг раз в 8с, пока привязка PENDING (ждём оплату первого
+  // счёта), чтобы UI сам перешёл в active/past_due.
+  const lavaQuery = useQuery({
+    queryKey: ['lava-recurring', subscriptionId],
+    queryFn: () => subscriptionApi.getLavaRecurring(subscriptionId),
+    enabled: !!subscription && !subscription.is_trial,
+    retry: false,
+    refetchInterval: (query) => (query.state.data?.status === 'PENDING' ? 8000 : false),
+  });
+  const lavaInfo = lavaQuery.data;
+  const lavaFeatureDisabled = isLavaFeatureDisabledError(lavaQuery.error);
+  const lavaUiStateValue: LavaUiState =
+    lavaInfo !== undefined || lavaFeatureDisabled
+      ? lavaUiState(lavaInfo, lavaFeatureDisabled)
+      : 'hidden';
+
+  const enableLavaMutation = useMutation({
+    mutationFn: () => subscriptionApi.enableLavaRecurring(subscriptionId),
+    onSuccess: (data) => {
+      if (data.redirect_url) {
+        openPaymentUrl(data.redirect_url, platform, openLink);
+      }
+      queryClient.invalidateQueries({ queryKey: ['lava-recurring', subscriptionId] });
+      // Бэкенд снимает autopay_enabled при включении рекуррента провайдера.
+      queryClient.invalidateQueries({ queryKey: ['subscription', subscriptionId] });
+    },
+    onError: (error: unknown) => {
+      const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data
+        ?.detail;
+      showToast({
+        type: 'error',
+        title: typeof detail === 'string' ? detail : t('subscription.lavaRecurring.enableError'),
+        message: '',
+        duration: 3000,
+      });
+    },
+  });
+
+  const cancelLavaMutation = useMutation({
+    mutationFn: () => subscriptionApi.cancelLavaRecurring(subscriptionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lava-recurring', subscriptionId] });
+      queryClient.invalidateQueries({ queryKey: ['subscription', subscriptionId] });
+      showToast({
+        type: 'success',
+        title: t('subscription.lavaRecurring.cancelled'),
+        message: '',
+        duration: 3000,
+      });
+    },
+    onError: (error: unknown) => {
+      const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data
+        ?.detail;
+      showToast({
+        type: 'error',
+        title: typeof detail === 'string' ? detail : t('subscription.lavaRecurring.cancelError'),
+        message: '',
+        duration: 3000,
+      });
+    },
+  });
+
+  const handleCancelLava = async () => {
+    const confirmed = await destructiveConfirm(
+      t('subscription.lavaRecurring.confirmCancel'),
+      t('subscription.lavaRecurring.cancel'),
+    );
+    if (!confirmed) return;
+    cancelLavaMutation.mutate();
+  };
+
   const autopayMutation = useMutation({
     mutationFn: (enabled: boolean) =>
       subscriptionApi.updateAutopay(enabled, undefined, subscriptionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription', subscriptionId] });
       queryClient.invalidateQueries({ queryKey: ['subscriptions-list'] });
+      // Enabling balance-autopay cancels SBP auto-pay server-side — refresh so
+      // the SBP block doesn't keep showing a now-stale 'active'/'pending' state.
+      queryClient.invalidateQueries({ queryKey: ['sbp-recurring', subscriptionId] });
     },
   });
 
@@ -530,7 +696,7 @@ export default function Subscription() {
       {/* Page title */}
       <div className="flex items-center gap-3">
         <WebBackButton to={isMultiTariff ? '/subscriptions' : '/'} />
-        <h1 className="truncate font-mono text-2xl font-black uppercase tracking-tight text-dark-50 sm:text-3xl">
+        <h1 className="text-2xl font-bold text-dark-50 sm:text-3xl">
           {isMultiTariff && subscription?.tariff_name
             ? subscription.tariff_name
             : t('subscription.title')}
@@ -549,15 +715,17 @@ export default function Subscription() {
 
           return (
             <div
-              className="relative overflow-hidden rounded-none"
+              className="relative overflow-hidden rounded-none lg:backdrop-blur-xl"
               style={{
                 background: g.cardBg,
                 border: subscription.is_trial
                   ? '1px solid rgba(var(--color-accent-400), 0.15)'
                   : isDark
-                    ? `2px solid ${g.cardBorder}`
-                    : `2px solid ${zone.mainHex}25`,
-                boxShadow: isDark ? g.shadow : `3px 3px 0 0 rgba(0,0,0,0.15)`,
+                    ? `1px solid ${g.cardBorder}`
+                    : `1px solid ${zone.mainHex}25`,
+                boxShadow: isDark
+                  ? g.shadow
+                  : `0 2px 16px ${zone.mainHex}12, 0 0 0 1px ${zone.mainHex}08`,
                 padding: '28px 28px 24px',
               }}
             >
@@ -575,18 +743,19 @@ export default function Subscription() {
                   {/* Zone indicator */}
                   <div className="mb-1 flex items-center gap-2">
                     <div
-                      className="h-2 w-2 rounded-none"
+                      className="h-2 w-2 rounded-full"
                       style={{
                         background: zone.mainHex,
-                        boxShadow: `0 0 8px ${zone.mainHex}`,
+                        boxShadow: `0 0 8px ${zone.mainHex}80`,
+                        transition: 'all 0.6s ease',
                       }}
                       aria-hidden="true"
                     />
                     <span
-                      className="font-mono text-[9px] font-black uppercase tracking-[0.25em]"
-                      style={{ color: zone.mainHex }}
+                      className="font-mono text-[11px] font-semibold uppercase tracking-widest"
+                      style={{ color: zone.mainHex, transition: 'color 0.6s ease' }}
                     >
-                      {t(zone.labelKey)}
+                      {isUnlimited ? t('dashboard.unlimited') : t(zone.labelKey)}
                     </span>
                   </div>
 
@@ -598,18 +767,18 @@ export default function Subscription() {
 
                 {/* Status badge */}
                 <span
-                  className="max-w-[55%] shrink-0 rounded-none px-3 py-1 text-center font-mono text-[10px] font-semibold uppercase tracking-wider"
+                  className="max-w-[55%] shrink-0 rounded-full px-3 py-1 text-center font-mono text-[10px] font-semibold uppercase tracking-wider"
                   style={{
                     background: subscription.is_active
                       ? `${zone.mainHex}15`
                       : subscription.is_limited
-                        ? 'rgba(var(--color-urgent-400),0.12)'
-                        : 'rgba(var(--color-critical-500),0.12)',
+                        ? 'rgba(255,184,0,0.12)'
+                        : 'rgba(255,59,92,0.12)',
                     border: subscription.is_active
                       ? `1px solid ${zone.mainHex}30`
                       : subscription.is_limited
-                        ? '1px solid rgba(var(--color-urgent-400),0.25)'
-                        : '1px solid rgba(var(--color-critical-500),0.25)',
+                        ? '1px solid rgba(255,184,0,0.25)'
+                        : '1px solid rgba(255,59,92,0.25)',
                     color: subscription.is_active
                       ? zone.mainHex
                       : subscription.is_limited
@@ -635,14 +804,14 @@ export default function Subscription() {
                   className="mb-6 rounded-none p-4"
                   style={{
                     background:
-                      'linear-gradient(135deg, rgba(var(--color-urgent-400),0.08), rgba(var(--color-urgent-400),0.03))',
-                    border: '1px solid rgba(var(--color-urgent-400),0.2)',
+                      'linear-gradient(135deg, rgba(255,184,0,0.08), rgba(255,184,0,0.03))',
+                    border: '1px solid rgba(255,184,0,0.2)',
                   }}
                 >
                   <div className="flex items-start gap-3">
                     <div
                       className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-none"
-                      style={{ background: 'rgba(var(--color-urgent-400),0.12)' }}
+                      style={{ background: 'rgba(255,184,0,0.12)' }}
                     >
                       <svg
                         width="16"
@@ -853,7 +1022,7 @@ export default function Subscription() {
                       {Array.from({ length: subscription.device_limit }, (_, i) => (
                         <div
                           key={i}
-                          className="h-[7px] w-[7px] rounded-none transition-[background-color,box-shadow] duration-300"
+                          className="h-[7px] w-[7px] rounded-full transition-[background-color,box-shadow] duration-300"
                           style={{
                             background: i < connectedDevices ? zone.mainHex : g.textGhost,
                             boxShadow: i < connectedDevices ? `0 0 6px ${zone.mainHex}50` : 'none',
@@ -864,14 +1033,14 @@ export default function Subscription() {
                   ) : (
                     <div className="flex w-16 flex-shrink-0 items-center" aria-hidden="true">
                       <div
-                        className="h-[6px] w-full overflow-hidden rounded-none"
+                        className="h-[6px] w-full overflow-hidden rounded-full"
                         style={{ background: g.textGhost }}
                       >
                         {/* scaleX (compositor) instead of width (layout-thrash).
                             Track is 64px (w-16), so 0.0625 floor = 4px minimum,
                             preserving the prior minWidth behaviour. */}
                         <div
-                          className="h-full w-full origin-left rounded-none transition-transform duration-500"
+                          className="h-full w-full origin-left rounded-full transition-transform duration-500"
                           style={{
                             transform: `scaleX(${(() => {
                               const pct = connectedDevices / subscription.device_limit;
@@ -1005,11 +1174,11 @@ export default function Subscription() {
                           </div>
                         </div>
                         <div
-                          className="relative h-1.5 overflow-hidden rounded-none"
+                          className="relative h-1.5 overflow-hidden rounded-full"
                           style={{ background: g.trackBg }}
                         >
                           <div
-                            className="absolute inset-0 origin-left rounded-none bg-accent-500 transition-transform duration-500"
+                            className="absolute inset-0 origin-left rounded-full bg-accent-500 transition-transform duration-500"
                             style={{
                               transform: `scaleX(${purchase.progress_percent / 100})`,
                             }}
@@ -1054,7 +1223,7 @@ export default function Subscription() {
                     role="switch"
                     aria-checked={subscription.autopay_enabled}
                     aria-label={t('subscription.autopay', 'Auto-payment')}
-                    className="relative h-7 w-[52px] rounded-none border border-dark-600 transition-colors duration-300"
+                    className="relative h-7 w-[52px] rounded-full transition-colors duration-300"
                     style={{
                       background: subscription.autopay_enabled ? zone.mainHex : g.textGhost,
                     }}
@@ -1063,10 +1232,10 @@ export default function Subscription() {
                         Resting position pinned at left:3px; on toggles a 23px
                         slide on the GPU. */}
                     <span
-                      className="absolute left-[3px] top-[3px] h-[20px] w-[22px] rounded-none bg-white transition-transform duration-300"
+                      className="absolute left-[3px] top-[3px] h-[22px] w-[22px] rounded-full bg-white transition-transform duration-300"
                       style={{
                         transform: subscription.autopay_enabled
-                          ? 'translateX(21px)'
+                          ? 'translateX(23px)'
                           : 'translateX(0)',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
                       }}
@@ -1081,7 +1250,7 @@ export default function Subscription() {
                    this block too (backend supports a day-interval charge). */}
               {!subscription.is_trial && sbpUiStateValue !== 'hidden' && (
                 <div
-                  className="mt-3 rounded-[14px] p-3.5"
+                  className="mt-3 rounded-none p-3.5"
                   style={{
                     background: g.innerBg,
                     border: `1px solid ${g.innerBorder}`,
@@ -1142,7 +1311,7 @@ export default function Subscription() {
                         <button
                           onClick={() => enableSbpMutation.mutate()}
                           disabled={enableSbpMutation.isPending}
-                          className="w-full whitespace-nowrap rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity disabled:opacity-50 sm:w-auto"
+                          className="w-full whitespace-nowrap rounded-none bg-accent-500 px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity disabled:opacity-50 sm:w-auto"
                         >
                           {enableSbpMutation.isPending ? (
                             <span className="mx-auto block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -1161,7 +1330,7 @@ export default function Subscription() {
                                   openPaymentUrl(sbpInfo.redirect_url, platform, openLink);
                                 }
                               }}
-                              className="w-full whitespace-nowrap rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity sm:w-auto"
+                              className="w-full whitespace-nowrap rounded-none bg-accent-500 px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity sm:w-auto"
                             >
                               {t('subscription.sbpRecurring.confirmInBank')}
                             </button>
@@ -1181,7 +1350,7 @@ export default function Subscription() {
                         <button
                           onClick={handleCancelSbp}
                           disabled={cancelSbpMutation.isPending}
-                          className="w-full whitespace-nowrap rounded-xl border border-error-500/30 bg-error-500/10 px-5 py-2.5 text-sm font-medium text-error-400 transition-colors hover:bg-error-500/20 disabled:opacity-50 sm:w-auto"
+                          className="w-full whitespace-nowrap rounded-none border border-error-500/30 bg-error-500/10 px-5 py-2.5 text-sm font-medium text-error-400 transition-colors hover:bg-error-500/20 disabled:opacity-50 sm:w-auto"
                         >
                           {t('subscription.sbpRecurring.cancel')}
                         </button>
@@ -1197,7 +1366,7 @@ export default function Subscription() {
                    числом дней, поэтому подпись строится из charge_days. */}
               {!subscription.is_trial && lavaUiStateValue !== 'hidden' && (
                 <div
-                  className="mt-3 rounded-[14px] p-3.5"
+                  className="mt-3 rounded-none p-3.5"
                   style={{
                     background: g.innerBg,
                     border: `1px solid ${g.innerBorder}`,
@@ -1264,7 +1433,7 @@ export default function Subscription() {
                         <button
                           onClick={() => enableLavaMutation.mutate()}
                           disabled={enableLavaMutation.isPending}
-                          className="w-full whitespace-nowrap rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity disabled:opacity-50 sm:w-auto"
+                          className="w-full whitespace-nowrap rounded-none bg-accent-500 px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity disabled:opacity-50 sm:w-auto"
                         >
                           {enableLavaMutation.isPending ? (
                             <span className="mx-auto block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -1283,7 +1452,7 @@ export default function Subscription() {
                                   openPaymentUrl(lavaInfo.redirect_url, platform, openLink);
                                 }
                               }}
-                              className="w-full whitespace-nowrap rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity sm:w-auto"
+                              className="w-full whitespace-nowrap rounded-none bg-accent-500 px-5 py-2.5 text-sm font-medium text-on-accent transition-opacity sm:w-auto"
                             >
                               {t('subscription.lavaRecurring.payFirst')}
                             </button>
@@ -1303,7 +1472,7 @@ export default function Subscription() {
                         <button
                           onClick={handleCancelLava}
                           disabled={cancelLavaMutation.isPending}
-                          className="w-full whitespace-nowrap rounded-xl border border-error-500/30 bg-error-500/10 px-5 py-2.5 text-sm font-medium text-error-400 transition-colors hover:bg-error-500/20 disabled:opacity-50 sm:w-auto"
+                          className="w-full whitespace-nowrap rounded-none border border-error-500/30 bg-error-500/10 px-5 py-2.5 text-sm font-medium text-error-400 transition-colors hover:bg-error-500/20 disabled:opacity-50 sm:w-auto"
                         >
                           {t('subscription.lavaRecurring.cancel')}
                         </button>
@@ -1320,7 +1489,7 @@ export default function Subscription() {
           className="relative overflow-hidden rounded-none py-12 text-center"
           style={{
             background: g.cardBg,
-            border: `2px solid ${g.cardBorder}`,
+            border: `1px solid ${g.cardBorder}`,
             boxShadow: g.shadow,
           }}
         >
@@ -1340,7 +1509,7 @@ export default function Subscription() {
           className="relative overflow-hidden rounded-none"
           style={{
             background: g.cardBg,
-            border: `2px solid ${g.cardBorder}`,
+            border: `1px solid ${g.cardBorder}`,
             boxShadow: g.shadow,
             padding: '24px 28px',
           }}
@@ -1368,11 +1537,11 @@ export default function Subscription() {
                 background:
                   subscription.is_daily_paused || subscription.status === 'disabled'
                     ? 'rgba(var(--color-accent-400), 0.12)'
-                    : 'rgba(var(--color-urgent-400),0.12)',
+                    : 'rgba(255,184,0,0.12)',
                 border:
                   subscription.is_daily_paused || subscription.status === 'disabled'
                     ? '1px solid rgba(var(--color-accent-400), 0.2)'
-                    : '1px solid rgba(var(--color-urgent-400),0.2)',
+                    : '1px solid rgba(255,184,0,0.2)',
                 color:
                   subscription.is_daily_paused || subscription.status === 'disabled'
                     ? 'rgb(var(--color-accent-400))'
@@ -1381,7 +1550,7 @@ export default function Subscription() {
             >
               {pauseMutation.isPending ? (
                 <span className="flex items-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-none border-2 border-current border-t-transparent" />
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 </span>
               ) : subscription.is_daily_paused || subscription.status === 'disabled' ? (
                 t('subscription.pause.resumeBtn')
@@ -1411,8 +1580,8 @@ export default function Subscription() {
                 <div
                   className="mt-4 rounded-none p-3 text-center text-sm"
                   style={{
-                    background: 'rgba(var(--color-critical-500),0.08)',
-                    border: '1px solid rgba(var(--color-critical-500),0.15)',
+                    background: 'rgba(255,59,92,0.08)',
+                    border: '1px solid rgba(255,59,92,0.15)',
                     color: 'rgb(var(--color-critical-500))',
                   }}
                 >
@@ -1426,8 +1595,8 @@ export default function Subscription() {
             <div
               className="mt-4 rounded-none p-4"
               style={{
-                background: 'rgba(var(--color-urgent-400),0.06)',
-                border: '1px solid rgba(var(--color-urgent-400),0.12)',
+                background: 'rgba(255,184,0,0.06)',
+                border: '1px solid rgba(255,184,0,0.12)',
               }}
             >
               <div className="flex items-start gap-3">
@@ -1479,11 +1648,11 @@ export default function Subscription() {
                     </span>
                   </div>
                   <div
-                    className="relative h-2 overflow-hidden rounded-none"
+                    className="relative h-2 overflow-hidden rounded-full"
                     style={{ background: g.trackBg }}
                   >
                     <div
-                      className="absolute inset-0 origin-left rounded-none transition-transform duration-500"
+                      className="absolute inset-0 origin-left rounded-full transition-transform duration-500"
                       style={{
                         transform: `scaleX(${progress / 100})`,
                         background:
@@ -1537,12 +1706,12 @@ export default function Subscription() {
             className="relative overflow-hidden rounded-none"
             style={{
               background: g.cardBg,
-              border: `2px solid ${g.cardBorder}`,
+              border: `1px solid ${g.cardBorder}`,
               boxShadow: g.shadow,
               padding: '24px 28px',
             }}
           >
-            <h2 className="text-base font-bold tracking-tight text-dark-50">
+            <h2 className="mb-4 text-base font-bold tracking-tight text-dark-50">
               {t('subscription.additionalOptions.title')}
             </h2>
 
@@ -1617,7 +1786,7 @@ export default function Subscription() {
             className="relative overflow-hidden rounded-none"
             style={{
               background: g.cardBg,
-              border: `2px solid ${g.cardBorder}`,
+              border: `1px solid ${g.cardBorder}`,
               boxShadow: g.shadow,
               padding: '16px 20px',
             }}
@@ -1728,7 +1897,7 @@ export default function Subscription() {
                 return (
                   <div
                     key={device.hwid}
-                    className="flex items-center justify-between rounded-[12px] p-3.5"
+                    className="flex items-center justify-between rounded-none p-3.5"
                     style={{
                       background: g.innerBg,
                       border: `1px solid ${g.innerBorder}`,
@@ -1736,7 +1905,7 @@ export default function Subscription() {
                   >
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       <div
-                        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px]"
+                        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-none"
                         style={{ background: g.trackBg }}
                       >
                         <svg
