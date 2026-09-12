@@ -25,7 +25,7 @@ const DOC_CONFIG: Record<
   offer: {
     queryKey: 'public-offer',
     titleKey: 'footer.offer',
-    titleFallback: 'Публичная оферта',
+    titleFallback: 'Пользовательское соглашение',
     fetch: infoApi.getPublicOffer,
   },
   privacy: {
@@ -64,6 +64,9 @@ export default function PublicLegal({ doc }: PublicLegalProps) {
       </div>
 
       <div className="mx-auto w-full max-w-3xl">
+        <div className="mb-2 text-xs font-mono uppercase tracking-wider text-dark-500">
+          Платега тест
+        </div>
         <h1 className="mb-6 text-2xl font-semibold text-dark-100">{title}</h1>
 
         {isLoading ? (

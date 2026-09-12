@@ -11,7 +11,7 @@ export const LEGAL_DOCUMENT_LINKS: Record<string, string> = {
 };
 
 const LEGAL_DOCUMENT_LABELS: Record<string, { key: string; fallback: string }> = {
-  public_offer: { key: 'footer.offer', fallback: 'Публичная оферта' },
+  public_offer: { key: 'footer.offer', fallback: 'Пользовательское соглашение' },
   privacy_policy: { key: 'footer.privacy', fallback: 'Политика конфиденциальности' },
 };
 

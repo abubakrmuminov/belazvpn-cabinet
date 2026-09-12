@@ -9,7 +9,7 @@ interface LegalLink {
 }
 
 const LINKS: LegalLink[] = [
-  { href: '/offer', labelKey: 'footer.offer', fallback: 'Публичная оферта' },
+  { href: '/offer', labelKey: 'footer.offer', fallback: 'Пользовательское соглашение' },
   { href: '/privacy', labelKey: 'footer.privacy', fallback: 'Политика конфиденциальности' },
   { href: '/recurrent-payments', labelKey: 'footer.recurrent', fallback: 'Рекуррентные платежи' },
 ];
@@ -24,24 +24,29 @@ export default function LegalFooter({ className = '' }: LegalFooterProps) {
 
   return (
     <footer
-      className={`flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-center text-[11px] leading-relaxed text-dark-500 ${className}`}
+      className={`flex flex-col items-center justify-center gap-1.5 text-center text-[11px] leading-relaxed text-dark-500 ${className}`}
     >
-      {LINKS.map((link, index) => (
-        <Fragment key={link.href}>
-          {index > 0 && (
-            <span className="text-dark-700" aria-hidden="true">
-              ·
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => openLink(`${window.location.origin}${link.href}`)}
-            className="transition-colors hover:text-accent-400"
-          >
-            {t(link.labelKey, link.fallback)}
-          </button>
-        </Fragment>
-      ))}
+      <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1">
+        {LINKS.map((link, index) => (
+          <Fragment key={link.href}>
+            {index > 0 && (
+              <span className="text-dark-700" aria-hidden="true">
+                ·
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => openLink(`${window.location.origin}${link.href}`)}
+              className="transition-colors hover:text-accent-400"
+            >
+              {t(link.labelKey, link.fallback)}
+            </button>
+          </Fragment>
+        ))}
+      </div>
+      <div className="text-[10px] tracking-wider uppercase opacity-60">
+        Платега тест
+      </div>
     </footer>
   );
 }
